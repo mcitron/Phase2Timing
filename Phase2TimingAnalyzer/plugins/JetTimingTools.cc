@@ -41,14 +41,44 @@ void JetTimingTools::jetTimeFromEcalCells(
       continue;
     if (fabs(ecalRH.time()) > ecalCellTimeThresh_)
       continue;
-    //    auto const pos = caloGeometry_->getPosition(ecalRH.detid());
-
-    //    std::cout<<ecalRH.detid()<<std::endl;
-    /*if (reco::deltaR2(jet, pos) > matchingRadius2_)
+    auto const pos = caloGeometry_->getPosition(ecalRH.detid());
+    if (reco::deltaR2(jet, pos) > matchingRadius2_)
       continue;
     weightedTimeCell += ecalRH.time() * ecalRH.energy() * sin(pos.theta());
     totalEmEnergyCell += ecalRH.energy() * sin(pos.theta());
-    nCells++;*/
+    nCells++;
+  }
+  if (totalEmEnergyCell > 0) {
+    weightedTimeCell /= totalEmEnergyCell;
+    }
+}
+
+
+
+//calculate jet time from ecal cells
+void JetTimingTools::jetTimeFromMTDCells(
+    const reco::Jet& jet,
+    const edm::SortedCollection<EcalRecHit, edm::StrictWeakOrdering<EcalRecHit>>& ecalRecHits,
+    float& weightedTimeCell,
+    float& totalEmEnergyCell,
+    uint& nCells) {
+    for (auto const& ecalRH : ecalRecHits) {
+    if (ecalRH.checkFlag(EcalRecHit::kSaturated) || ecalRH.checkFlag(EcalRecHit::kLeadingEdgeRecovered) ||
+        ecalRH.checkFlag(EcalRecHit::kPoorReco) || ecalRH.checkFlag(EcalRecHit::kWeird) ||
+        ecalRH.checkFlag(EcalRecHit::kDiWeird))
+      continue;
+    if (ecalRH.energy() < ecalCellEnergyThresh_)
+      continue;
+    if (ecalRH.timeError() <= 0. || ecalRH.timeError() > ecalCellTimeErrorThresh_)
+      continue;
+    if (fabs(ecalRH.time()) > ecalCellTimeThresh_)
+      continue;
+    auto const pos = caloGeometry_->getPosition(ecalRH.detid());
+    if (reco::deltaR2(jet, pos) > matchingRadius2_)
+      continue;
+    weightedTimeCell += ecalRH.time() * ecalRH.energy() * sin(pos.theta());
+    totalEmEnergyCell += ecalRH.energy() * sin(pos.theta());
+    nCells++;
   }
   if (totalEmEnergyCell > 0) {
     weightedTimeCell /= totalEmEnergyCell;

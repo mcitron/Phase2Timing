@@ -170,7 +170,7 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   auto pSetup = iSetup.getHandle(setupToken_);
 #endif
 
-  //  _jetTimingTools.init(iSetup);
+  _jetTimingTools.init(iSetup);
 
   iEvent.getByToken(_genParticles, _genParticlesH);
   iEvent.getByToken(_recoak4PFJets, _recoak4PFJetsH);

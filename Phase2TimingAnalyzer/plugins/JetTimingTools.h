@@ -25,6 +25,11 @@ public:
                             float&,
                             float&,
                             uint&);
+  void jetTimeFromMTDCells(const reco::Jet&,
+                            const edm::SortedCollection<EcalRecHit, edm::StrictWeakOrdering<EcalRecHit>>&,
+                            float&,
+                            float&,
+                            uint&);
   void setMatchingRadius(double );
   void setEcalCellEnergyThreshold(double);
   void setEcalCellTimeThreshold(double );
