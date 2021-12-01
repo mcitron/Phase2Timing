@@ -6,10 +6,16 @@ process.load("Geometry.CMSCommonData.cmsIdealGeometryXML_cfi");
 process.load("Geometry.CaloEventSetup.CaloGeometry_cfi");
 process.load("Geometry.CaloEventSetup.CaloTopology_cfi");
 process.load("TrackingTools/TransientTrack/TransientTrackBuilder_cfi")
-process.load("Configuration.Geometry.GeometryIdeal_cff")
+#process.load("Configuration.Geometry.GeometryIdeal_cff")
 process.load("Configuration.StandardSequences.MagneticField_cff")
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
+process.load("Configuration.Geometry.GeometryExtended2026D76Reco_cff")
+process.load("Validation.MtdValidation.btlDigiHits_cfi")
+process.load("Validation.MtdValidation.btlLocalReco_cfi")
+process.load("Validation.MtdValidation.etlDigiHits_cfi")
+process.load("Validation.MtdValidation.etlLocalReco_cfi")
+process.load('Geometry.MTDGeometryBuilder.mtdGeometry_cfi')
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 
@@ -30,6 +36,8 @@ process.demo = cms.EDAnalyzer('Phase2TimingAnalyzer',
                               genParticles    = cms.InputTag("genParticles", "", "HLT"),
                               recoak4PFJets    = cms.InputTag("ak4PFJets", "", "RECO"),
                               ebRecHitsColl = cms.InputTag( 'ecalRecHit','EcalRecHitsEB',"RECO" ),
+                              mtdBTLRecHitsColl = cms.InputTag( 'mtdRecHits','FTLBarrel',"RECO" ),
+                              mtdETLRecHitsColl = cms.InputTag( 'mtdRecHits','FTLEndcap',"RECO" ),
 )
 
 

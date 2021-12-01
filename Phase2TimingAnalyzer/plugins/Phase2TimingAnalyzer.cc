@@ -117,6 +117,10 @@ private:
   edm::Handle< edm::View<reco::PFJet> > _recoak4PFJetsH;
   const edm::EDGetTokenT<edm::SortedCollection<EcalRecHit, edm::StrictWeakOrdering<EcalRecHit>>> ecalRecHitsEBToken_;
   edm::Handle< edm::SortedCollection<EcalRecHit, edm::StrictWeakOrdering<EcalRecHit>> > _ecalRecHitsEBH;
+  const edm::EDGetTokenT<edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>>> mtdRecHitsBTLToken_;
+  edm::Handle< edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>> > _mtdRecHitsBTLH;
+  const edm::EDGetTokenT<edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>>> mtdRecHitsETLToken_;
+  edm::Handle< edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>> > _mtdRecHitsETLH;
 
   // setup tree;                                                                                                                                             
   TTree* tree;
@@ -142,7 +146,11 @@ Phase2TimingAnalyzer::Phase2TimingAnalyzer(const edm::ParameterSet& iConfig):
   _recoak4PFJets(consumes< edm::View<reco::PFJet> >(iConfig.getParameter<edm::InputTag>("recoak4PFJets"))),
   _recoak4PFJetsH(),
   ecalRecHitsEBToken_{consumes<edm::SortedCollection<EcalRecHit, edm::StrictWeakOrdering<EcalRecHit>>>(												       iConfig.getParameter<edm::InputTag>("ebRecHitsColl"))},
-  _ecalRecHitsEBH()
+  _ecalRecHitsEBH(),
+  mtdRecHitsBTLToken_{consumes<edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>>>(												       iConfig.getParameter<edm::InputTag>("mtdBTLRecHitsColl"))},
+  _mtdRecHitsBTLH(),
+  mtdRecHitsETLToken_{consumes<edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>>>(												       iConfig.getParameter<edm::InputTag>("mtdETLRecHitsColl"))},
+  _mtdRecHitsETLH()
 {
 
 }
@@ -175,6 +183,8 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   iEvent.getByToken(_genParticles, _genParticlesH);
   iEvent.getByToken(_recoak4PFJets, _recoak4PFJetsH);
   iEvent.getByToken(ecalRecHitsEBToken_, _ecalRecHitsEBH);
+  iEvent.getByToken(mtdRecHitsBTLToken_, _mtdRecHitsBTLH);
+  iEvent.getByToken(mtdRecHitsETLToken_, _mtdRecHitsETLH);
 
 
   //  auto const& ecalRecHitsEB = iEvent.get(ecalRecHitsEBToken_);
@@ -241,6 +251,8 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   }
 
   auto const& ecalRecHitsEB = iEvent.get(ecalRecHitsEBToken_);
+  auto const& mtdRecHitsBTL = iEvent.get(mtdRecHitsBTLToken_);
+  auto const& mtdRecHitsETL = iEvent.get(mtdRecHitsETLToken_);
 
   if(debug)std::cout<<" [DEBUG MODE] --------------- LOOP ON RECO JETS --------------------------------------"<<std::endl; 
   for (const auto & recojet_iter : *_recoak4PFJetsH){
@@ -274,7 +286,13 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
     float weightedMTDTimeCell = 0;
     float totalMTDEnergyCell = 0;
     unsigned int MTDnCells = 0;
-    /// insert here jet timing tools function
+    //    std::cout<<"-----> JET:  eta  "<<recojet_iter.eta()<<" phi: "<<recojet_iter.phi()<<" pt: "<<recojet_iter.pt()<<std::endl;
+    if(fabs(recojet_iter.eta())<1.4442)
+      _jetTimingTools.jetTimeFromMTDCells(recojet_iter, mtdRecHitsBTL, weightedMTDTimeCell, totalECALEnergyCell, MTDnCells);
+    else if(fabs(recojet_iter.eta())>1.4442  && fabs(recojet_iter.eta())<3){
+      _jetTimingTools.jetTimeFromMTDCells(recojet_iter, mtdRecHitsETL, weightedMTDTimeCell, totalECALEnergyCell, MTDnCells);
+    }
+
     recojet_MTDenergy.push_back(totalMTDEnergyCell);
     recojet_MTDnCells.push_back(MTDnCells);
     if(MTDnCells>0)
