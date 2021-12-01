@@ -1,6 +1,14 @@
 import FWCore.ParameterSet.Config as cms
 
 process = cms.Process("Demo")
+process.load("FWCore.MessageService.MessageLogger_cfi")
+process.load("Geometry.CMSCommonData.cmsIdealGeometryXML_cfi");
+process.load("Geometry.CaloEventSetup.CaloGeometry_cfi");
+process.load("Geometry.CaloEventSetup.CaloTopology_cfi");
+process.load("TrackingTools/TransientTrack/TransientTrackBuilder_cfi")
+process.load("Configuration.Geometry.GeometryIdeal_cff")
+process.load("Configuration.StandardSequences.MagneticField_cff")
+process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 

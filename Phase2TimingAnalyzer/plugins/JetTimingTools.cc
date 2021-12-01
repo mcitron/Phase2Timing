@@ -41,14 +41,13 @@ void JetTimingTools::jetTimeFromEcalCells(
       continue;
     if (fabs(ecalRH.time()) > ecalCellTimeThresh_)
       continue;
-    //    auto const pos = caloGeometry_->getPosition(ecalRH.detid());
+        auto const pos = caloGeometry_->getPosition(ecalRH.detid());
 
-    //    std::cout<<ecalRH.detid()<<std::endl;
-    /*if (reco::deltaR2(jet, pos) > matchingRadius2_)
+    if (reco::deltaR2(jet, pos) > matchingRadius2_)
       continue;
     weightedTimeCell += ecalRH.time() * ecalRH.energy() * sin(pos.theta());
     totalEmEnergyCell += ecalRH.energy() * sin(pos.theta());
-    nCells++;*/
+    nCells++;
   }
   if (totalEmEnergyCell > 0) {
     weightedTimeCell /= totalEmEnergyCell;

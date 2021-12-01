@@ -162,7 +162,6 @@ Phase2TimingAnalyzer::~Phase2TimingAnalyzer() {
 void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
   using namespace edm;
 
-
 #ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
   // if the SetupData is always needed
   auto setup = iSetup.getData(setupToken_);
@@ -170,7 +169,7 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   auto pSetup = iSetup.getHandle(setupToken_);
 #endif
 
-  //  _jetTimingTools.init(iSetup);
+   _jetTimingTools.init(iSetup);
 
   iEvent.getByToken(_genParticles, _genParticlesH);
   iEvent.getByToken(_recoak4PFJets, _recoak4PFJetsH);
