@@ -147,6 +147,10 @@ private:
   const edm::EDGetTokenT<edm::View<ticl::Trackster>> _tracksterHADToken;
   const edm::EDGetTokenT<edm::View<ticl::Trackster>> _tracksterTrkEMToken;
   const edm::EDGetTokenT<edm::View<ticl::Trackster>> _tracksterTrkToken;
+  const edm::EDGetTokenT<edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>>> mtdRecHitsBTLToken_;
+  edm::Handle< edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>> > _mtdRecHitsBTLH;
+  const edm::EDGetTokenT<edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>>> mtdRecHitsETLToken_;
+  edm::Handle< edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>> > _mtdRecHitsETLH;
 
   // setup tree;                                                                                                                                             
   TTree* tree;
@@ -177,7 +181,11 @@ Phase2TimingAnalyzer::Phase2TimingAnalyzer(const edm::ParameterSet& iConfig):
   _tracksterMergeToken(consumes<edm::View<ticl::Trackster>>(iConfig.getParameter<edm::InputTag>("ticlTrackstersMerge"))),
   _tracksterHADToken(consumes<edm::View<ticl::Trackster>>(iConfig.getParameter<edm::InputTag>("ticlTrackstersHAD"))),
   _tracksterTrkEMToken(consumes<edm::View<ticl::Trackster>>(iConfig.getParameter<edm::InputTag>("ticlTrackstersTrkEM"))),
-  _tracksterTrkToken(consumes<edm::View<ticl::Trackster>>(iConfig.getParameter<edm::InputTag>("ticlTrackstersTrk")))
+  _tracksterTrkToken(consumes<edm::View<ticl::Trackster>>(iConfig.getParameter<edm::InputTag>("ticlTrackstersTrk"))),
+  mtdRecHitsBTLToken_{consumes<edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>>>(												       iConfig.getParameter<edm::InputTag>("mtdBTLRecHitsColl"))},
+  _mtdRecHitsBTLH(),
+  mtdRecHitsETLToken_{consumes<edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>>>(												       iConfig.getParameter<edm::InputTag>("mtdETLRecHitsColl"))},
+  _mtdRecHitsETLH()
 {
 
 }
@@ -212,6 +220,8 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   iEvent.getByToken(_tracksterHADToken, tracksterHADH);
   iEvent.getByToken(_tracksterTrkEMToken, tracksterTrkEMH);
   iEvent.getByToken(_tracksterTrkToken, tracksterTrkH);
+  iEvent.getByToken(mtdRecHitsBTLToken_, _mtdRecHitsBTLH);
+  iEvent.getByToken(mtdRecHitsETLToken_, _mtdRecHitsETLH);
 
 
   //  auto const& ecalRecHitsEB = iEvent.get(ecalRecHitsEBToken_);
@@ -314,20 +324,8 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   }
 
   auto const& ecalRecHitsEB = iEvent.get(ecalRecHitsEBToken_);
-  // if(debug)std::cout<<" [DEBUG MODE] --------------- LOOP ON EM TRACKSTERS --------------------------------------"<<std::endl; 
-  // std::cout << "em"<< std::endl;
-  // for (const auto & recotrackster_iter : *tracksterEMH){
-  //     std::cout << recotrackster_iter.time() << " " << recotrackster_iter.timeError() << std::endl;
-  // }
-  // if(debug)std::cout<<" [DEBUG MODE] --------------- LOOP ON MERGE TRACKSTERS --------------------------------------"<<std::endl; 
-  // std::cout << "merge"<< std::endl;
-  // for (const auto & recotrackster_iter : *tracksterMergeH){
-  //     std::cout << recotrackster_iter.time() << " " << recotrackster_iter.timeError() << std::endl;
-  // }
-  // std::cout << "trk"<< std::endl;
-  // for (const auto & recotrackster_iter : *tracksterEMH){
-  //     if (recotrackster_iter.timeError() > 0) std::cout << recotrackster_iter.time() << " " << recotrackster_iter.timeError() << " " << recotrackster_iter.raw_energy() << " " << recotrackster_iter.regressed_energy() << " " << recotrackster_iter.raw_pt() << " " << recotrackster_iter.barycenter().x() << " "<< recotrackster_iter.barycenter().y() << " " << recotrackster_iter.barycenter().z()<< std::endl;
-  // }
+  auto const& mtdRecHitsBTL = iEvent.get(mtdRecHitsBTLToken_);
+  auto const& mtdRecHitsETL = iEvent.get(mtdRecHitsETLToken_);
 
   if(debug)std::cout<<" [DEBUG MODE] --------------- LOOP ON RECO JETS --------------------------------------"<<std::endl; 
   for (const auto & recojet_iter : *_recoak4PFJetsH){
@@ -361,7 +359,13 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
     float weightedMTDTimeCell = 0;
     float totalMTDEnergyCell = 0;
     unsigned int MTDnCells = 0;
-    /// insert here jet timing tools function
+    //    std::cout<<"-----> JET:  eta  "<<recojet_iter.eta()<<" phi: "<<recojet_iter.phi()<<" pt: "<<recojet_iter.pt()<<std::endl;
+    if(fabs(recojet_iter.eta())<1.4442)
+      _jetTimingTools.jetTimeFromMTDCells(recojet_iter, mtdRecHitsBTL, weightedMTDTimeCell, totalECALEnergyCell, MTDnCells);
+    else if(fabs(recojet_iter.eta())>1.4442  && fabs(recojet_iter.eta())<3){
+      _jetTimingTools.jetTimeFromMTDCells(recojet_iter, mtdRecHitsETL, weightedMTDTimeCell, totalECALEnergyCell, MTDnCells);
+    }
+
     recojet_MTDenergy.push_back(totalMTDEnergyCell);
     recojet_MTDnCells.push_back(MTDnCells);
     if(MTDnCells>0)
