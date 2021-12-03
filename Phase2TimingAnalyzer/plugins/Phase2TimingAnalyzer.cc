@@ -330,15 +330,15 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   if(debug)std::cout<<" [DEBUG MODE] --------------- LOOP ON RECO JETS --------------------------------------"<<std::endl; 
   for (const auto & recojet_iter : *_recoak4PFJetsH){
 
-    if(recojet_iter.pt()<10)continue;
+    if(recojet_iter.pt()<20)continue;
     if(fabs(recojet_iter.eta())>3)continue;
+    
     nrecojets++;
     recojet_pt.push_back(recojet_iter.pt());
     recojet_eta.push_back(recojet_iter.eta());
     recojet_phi.push_back(recojet_iter.phi());
     recojet_e.push_back(recojet_iter.energy());
     
-
 
     if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM ECAL --------------------------------------"<<std::endl; 
     float weightedECALTimeCell = 0;
@@ -359,11 +359,10 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
     float weightedMTDTimeCell = 0;
     float totalMTDEnergyCell = 0;
     unsigned int MTDnCells = 0;
-    //    std::cout<<"-----> JET:  eta  "<<recojet_iter.eta()<<" phi: "<<recojet_iter.phi()<<" pt: "<<recojet_iter.pt()<<std::endl;
     if(fabs(recojet_iter.eta())<1.4442)
-      _jetTimingTools.jetTimeFromMTDCells(recojet_iter, mtdRecHitsBTL, weightedMTDTimeCell, totalECALEnergyCell, MTDnCells);
-    else if(fabs(recojet_iter.eta())>1.4442  && fabs(recojet_iter.eta())<3){
-      _jetTimingTools.jetTimeFromMTDCells(recojet_iter, mtdRecHitsETL, weightedMTDTimeCell, totalECALEnergyCell, MTDnCells);
+      _jetTimingTools.jetTimeFromMTDCells(recojet_iter, mtdRecHitsBTL, weightedMTDTimeCell, totalECALEnergyCell, MTDnCells,1);
+    else if(fabs(recojet_iter.eta())>1.4442 && fabs(recojet_iter.eta()) <3.0){
+      _jetTimingTools.jetTimeFromMTDCells(recojet_iter, mtdRecHitsETL, weightedMTDTimeCell, totalECALEnergyCell, MTDnCells,0);
     }
 
     recojet_MTDenergy.push_back(totalMTDEnergyCell);
@@ -402,7 +401,7 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
     else
       recojet_HGCALtime.push_back(-50);
 
-    
+
   }
   
   

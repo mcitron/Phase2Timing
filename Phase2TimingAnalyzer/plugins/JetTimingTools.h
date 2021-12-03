@@ -52,7 +52,8 @@ public:
                             const edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>>&,
                             float&,
                             float&,
-                            uint&);
+			   uint&,
+			   bool);
   void setMatchingRadius(double );
   void setEcalCellEnergyThreshold(double);
   void setEcalCellTimeThreshold(double );

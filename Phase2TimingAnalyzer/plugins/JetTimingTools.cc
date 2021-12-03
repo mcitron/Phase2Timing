@@ -172,32 +172,57 @@ void JetTimingTools::jetTimeFromMTDCells(
     const edm::SortedCollection<FTLRecHit,edm::StrictWeakOrdering<FTLRecHit> >& mtdRecHits,
     float& weightedTimeCell,
     float& totalEmEnergyCell,
-    uint& nCells) {
+    uint& nCells, bool isBTL) {
   
   for (auto const& mtdRH : mtdRecHits) {
-    
-    if (mtdRH.energy() < mtdCellEnergyThresh_)
-      continue;
+    /* if (mtdRH.energy() < mtdCellEnergyThresh_)
+            continue;
     if (mtdRH.timeError() <= 0. || mtdRH.timeError() > mtdCellTimeErrorThresh_)
       continue;
     if (fabs(mtdRH.time()) > mtdCellTimeThresh_)
       continue;
+    */
+    double dR;
+    double gp_x;
+    double gp_y;
+    double gp_z;
+    double gp_theta;
 
-    BTLDetId detId = mtdRH.id();
-    DetId geoId = detId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(mtdTopology_->getMTDTopologyMode()));
-    const MTDGeomDet* thedet = mtdGeometry_->idToDet(geoId);
-    const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(thedet->topology());
-    const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());      
-    Local3DPoint local_point(0., 0., 0.);
-    local_point = topo.pixelToModuleLocalPoint(local_point, detId.row(topo.nrows()), detId.column(topo.nrows()));
-    const auto& global_point = thedet->toGlobal(local_point);
+    if(isBTL){
+      BTLDetId detId = mtdRH.id();
+      DetId geoId = detId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(mtdTopology_->getMTDTopologyMode()));
+      const MTDGeomDet* thedet = mtdGeometry_->idToDet(geoId);
+      const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(thedet->topology());
+      const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());      
+      Local3DPoint local_point(0., 0., 0.);
+      local_point = topo.pixelToModuleLocalPoint(local_point, detId.row(topo.nrows()), detId.column(topo.nrows()));
+      const auto& global_point = thedet->toGlobal(local_point);
+      dR=reco::deltaR2(jet, global_point);
+      gp_x = global_point.x();
+      gp_y = global_point.y();
+      gp_z = global_point.z();
+      gp_theta = global_point.theta();
+    }else{
+      ETLDetId detId = mtdRH.id();
+      DetId geoId = detId.geographicalId();
+      const MTDGeomDet* thedet = mtdGeometry_->idToDet(geoId);
+      const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(thedet->topology());
+      const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());
+      Local3DPoint local_point(topo.localX(mtdRH.row()), topo.localY(mtdRH.column()), 0.);
+      const auto& global_point = thedet->toGlobal(local_point);
+      dR=reco::deltaR2(jet, global_point);
+      gp_x = global_point.x();
+      gp_y = global_point.y();
+      gp_z = global_point.z();
+      gp_theta = global_point.theta();
+    }
 
-
-    if (reco::deltaR2(jet, global_point) > matchingRadius2_)
-    continue;
-    //    std::cout<< "MTD RECHIT: eta: "<<global_point.eta()<<" phi: "<<global_point.phi()<<" pt: "<<mtdRH.energy()* sin(global_point.theta())<<" time: "<<mtdRH.time()<<std::endl;
-    weightedTimeCell += mtdRH.time() * mtdRH.energy() * sin(global_point.theta());
-    totalEmEnergyCell += mtdRH.energy() * sin(global_point.theta());
+    if (dR > matchingRadius2_)
+      continue;
+    double tof = (TMath::Sqrt((gp_x)*(gp_x)+(gp_y)*(gp_y)+(gp_z)*(gp_z))/10)*1./(2.9979); 
+    //      std::cout<< "MTD RECHIT: eta: "<<gp_eta<<" phi: "<<gp_phi<<" x: "<<gp_x<<" y: "<<gp_y<<" z: "<<gp_z<<" e: "<<mtdRH.energy()<<" time: "<<mtdRH.time()<<" tof: "<<tof<<" timeDiff: "<<(mtdRH.time()-tof)<<std::endl;
+    weightedTimeCell += (mtdRH.time()-tof) * mtdRH.energy() * sin(gp_theta);
+    totalEmEnergyCell += mtdRH.energy() * sin(gp_theta);
     nCells++;
   }
   if (totalEmEnergyCell > 0) {

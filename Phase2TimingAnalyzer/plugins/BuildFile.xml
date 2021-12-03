@@ -8,4 +8,5 @@
 <use name="DataFormats/EcalDetId"/>
 <use name="DataFormats/GeometryVector"/>
 <use name="HLTrigger/HLTcore"/>
+
 <flags EDM_PLUGIN="1"/>
