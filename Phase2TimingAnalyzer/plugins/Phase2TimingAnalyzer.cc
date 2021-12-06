@@ -315,17 +315,17 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
 	hgPos.SetPtEtaPhiM(1,q_hgeta[ig],q_hgphi[ig],0);
 	
 	float ebDeltaR = jetVec.DeltaR(ebPos);
-	if (ebDeltaR < 0.16 and closestEbGenR > ebDeltaR){
+	if (ebDeltaR < 0.4 and closestEbGenR > ebDeltaR){
 	    closestEbGenR = ebDeltaR;
 	    closestEbGenIndex = ig;
 	}
 	float hgDeltaR = jetVec.DeltaR(hgPos);
-	if (hgDeltaR < 0.16 and closestHgGenR > hgDeltaR){
+	if (hgDeltaR < 0.4 and closestHgGenR > hgDeltaR){
 	    closestHgGenR = hgDeltaR;
 	    closestHgGenIndex = ig;
 	}
 	float genDeltaR = jetVec.DeltaR(pos);
-	if (genDeltaR < 0.16 and closestGenR > genDeltaR){
+	if (genDeltaR < 0.4 and closestGenR > genDeltaR){
 	    closestGenR = genDeltaR;
 	    closestGenIndex = ig;
 	}
