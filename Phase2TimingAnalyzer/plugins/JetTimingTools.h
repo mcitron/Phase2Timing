@@ -25,6 +25,8 @@
 #include "Geometry/MTDGeometryBuilder/interface/RectangularMTDTopology.h"
 #include "Geometry/MTDCommonData/interface/MTDTopologyMode.h"
 
+#include "DataFormats/FTLRecHit/interface/FTLClusterCollections.h"
+
 namespace edm {
   class Event;
   class EventSetup;
@@ -54,6 +56,12 @@ public:
                             float&,
 			   uint&,
 			   bool);
+  void jetTimeFromMTDClus(const reco::Jet&,
+			      const edm::Handle<FTLClusterCollection>&,
+			      float&,
+			      float&,
+			      uint&,
+			      bool);
   void setMatchingRadius(double );
   void setEcalCellEnergyThreshold(double);
   void setEcalCellTimeThreshold(double );

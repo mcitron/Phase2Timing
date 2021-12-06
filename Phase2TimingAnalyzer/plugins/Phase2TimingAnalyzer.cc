@@ -109,6 +109,9 @@ struct tree_struc_{
   std::vector<float>            recojet_MTDtime;
   std::vector<float>            recojet_MTDenergy;
   std::vector<float>            recojet_MTDnCells;
+  std::vector<float>            recojet_MTDClutime;
+  std::vector<float>            recojet_MTDCluenergy;
+  std::vector<float>            recojet_MTDnClus;
   std::vector<float>            recojet_HGCALtime;
   std::vector<float>            recojet_HGCALenergy;
   std::vector<float>            recojet_HGCALnTracksters;
@@ -151,7 +154,10 @@ private:
   edm::Handle< edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>> > _mtdRecHitsBTLH;
   const edm::EDGetTokenT<edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>>> mtdRecHitsETLToken_;
   edm::Handle< edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>> > _mtdRecHitsETLH;
-
+  const edm::EDGetTokenT<FTLClusterCollection> btlRecCluToken_;
+  edm::Handle<FTLClusterCollection> _btlRecCluH;
+  const edm::EDGetTokenT<FTLClusterCollection> etlRecCluToken_;
+  edm::Handle<FTLClusterCollection> _etlRecCluH;
   // setup tree;                                                                                                                                             
   TTree* tree;
   tree_struc_ tree_;
@@ -185,9 +191,12 @@ Phase2TimingAnalyzer::Phase2TimingAnalyzer(const edm::ParameterSet& iConfig):
   mtdRecHitsBTLToken_{consumes<edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>>>(												       iConfig.getParameter<edm::InputTag>("mtdBTLRecHitsColl"))},
   _mtdRecHitsBTLH(),
   mtdRecHitsETLToken_{consumes<edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>>>(												       iConfig.getParameter<edm::InputTag>("mtdETLRecHitsColl"))},
-  _mtdRecHitsETLH()
+  _mtdRecHitsETLH(),
+  btlRecCluToken_(consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("recBTLCluTag"))),
+  _btlRecCluH(),
+  etlRecCluToken_(consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("recETLCluTag"))),
+  _etlRecCluH()
 {
-
 }
 
 Phase2TimingAnalyzer::~Phase2TimingAnalyzer() {
@@ -222,7 +231,11 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   iEvent.getByToken(_tracksterTrkToken, tracksterTrkH);
   iEvent.getByToken(mtdRecHitsBTLToken_, _mtdRecHitsBTLH);
   iEvent.getByToken(mtdRecHitsETLToken_, _mtdRecHitsETLH);
-
+  
+  iEvent.getByToken(btlRecCluToken_,_btlRecCluH);
+  iEvent.getByToken(etlRecCluToken_,_etlRecCluH);
+  //  auto _btlRecCluH = makeValid(iEvent.getHandle(btlRecCluToken_));
+  // auto _etlRecCluH = makeValid(iEvent.getHandle(etlRecCluToken_));
 
   //  auto const& ecalRecHitsEB = iEvent.get(ecalRecHitsEBToken_);
 
@@ -287,6 +300,9 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   std::vector<float>    recojet_MTDtime;
   std::vector<float>    recojet_MTDenergy;
   std::vector<float>    recojet_MTDnCells;
+  std::vector<float>            recojet_MTDClutime;
+  std::vector<float>            recojet_MTDCluenergy;
+  std::vector<float>            recojet_MTDnClus;
   std::vector<float>    recojet_HGCALtime;
   std::vector<float>    recojet_HGCALenergy;
   std::vector<float>    recojet_HGCALnTracksters;
@@ -326,6 +342,8 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   auto const& ecalRecHitsEB = iEvent.get(ecalRecHitsEBToken_);
   auto const& mtdRecHitsBTL = iEvent.get(mtdRecHitsBTLToken_);
   auto const& mtdRecHitsETL = iEvent.get(mtdRecHitsETLToken_);
+  //  auto const& mtdClusBTL = iEvent.get(btlRecCluToken_);
+  //  auto const& mtdClusETL = iEvent.get(btlRecCluToken_);
 
   if(debug)std::cout<<" [DEBUG MODE] --------------- LOOP ON RECO JETS --------------------------------------"<<std::endl; 
   for (const auto & recojet_iter : *_recoak4PFJetsH){
@@ -355,14 +373,14 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
 
 
 
-    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM MTD --------------------------------------"<<std::endl; 
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM MTD CELLS--------------------------------------"<<std::endl; 
     float weightedMTDTimeCell = 0;
     float totalMTDEnergyCell = 0;
     unsigned int MTDnCells = 0;
     if(fabs(recojet_iter.eta())<1.4442)
-      _jetTimingTools.jetTimeFromMTDCells(recojet_iter, mtdRecHitsBTL, weightedMTDTimeCell, totalECALEnergyCell, MTDnCells,1);
+      _jetTimingTools.jetTimeFromMTDCells(recojet_iter, mtdRecHitsBTL, weightedMTDTimeCell, totalMTDEnergyCell, MTDnCells,1);
     else if(fabs(recojet_iter.eta())>1.4442 && fabs(recojet_iter.eta()) <3.0){
-      _jetTimingTools.jetTimeFromMTDCells(recojet_iter, mtdRecHitsETL, weightedMTDTimeCell, totalECALEnergyCell, MTDnCells,0);
+      _jetTimingTools.jetTimeFromMTDCells(recojet_iter, mtdRecHitsETL, weightedMTDTimeCell, totalMTDEnergyCell, MTDnCells,0);
     }
 
     recojet_MTDenergy.push_back(totalMTDEnergyCell);
@@ -371,6 +389,23 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
       recojet_MTDtime.push_back(weightedMTDTimeCell);
     else
       recojet_MTDtime.push_back(-50);
+
+
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM MTD CLUSTERS--------------------------------------"<<std::endl; 
+    float weightedMTDTimeClu = 0;
+    float totalMTDEnergyClu = 0;
+    unsigned int MTDnClus = 0;
+    if(fabs(recojet_iter.eta())<1.4442)
+      _jetTimingTools.jetTimeFromMTDClus(recojet_iter, _btlRecCluH, weightedMTDTimeClu, totalMTDEnergyClu, MTDnClus,1);
+    else if(fabs(recojet_iter.eta())>1.4442 && fabs(recojet_iter.eta()) <3.0){
+      _jetTimingTools.jetTimeFromMTDClus(recojet_iter, _etlRecCluH, weightedMTDTimeClu, totalMTDEnergyClu, MTDnClus,0);
+    }
+    recojet_MTDCluenergy.push_back(totalMTDEnergyClu);
+    recojet_MTDnClus.push_back(MTDnClus);
+    if(MTDnClus>0)
+      recojet_MTDClutime.push_back(weightedMTDTimeClu);
+    else
+      recojet_MTDClutime.push_back(-50);
 
 
     if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM HGCAL --------------------------------------"<<std::endl; 
@@ -470,6 +505,9 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
     tree_.recojet_MTDtime.push_back(recojet_MTDtime[ij]);
     tree_.recojet_MTDenergy.push_back(recojet_MTDenergy[ij]);
     tree_.recojet_MTDnCells.push_back(recojet_MTDnCells[ij]);
+    tree_.recojet_MTDClutime.push_back(recojet_MTDClutime[ij]);
+    tree_.recojet_MTDCluenergy.push_back(recojet_MTDCluenergy[ij]);
+    tree_.recojet_MTDnClus.push_back(recojet_MTDnClus[ij]);
     tree_.recojet_HGCALtime.push_back(recojet_HGCALtime[ij]);
     tree_.recojet_HGCALenergy.push_back(recojet_HGCALenergy[ij]);
     tree_.recojet_HGCALnTracksters.push_back(recojet_HGCALnTracksters[ij]);
@@ -548,6 +586,9 @@ void Phase2TimingAnalyzer::beginJob() {
   tree->Branch("recoJet_MTDtime",             &tree_.recojet_MTDtime);
   tree->Branch("recoJet_MTDenergy",             &tree_.recojet_MTDenergy);
   tree->Branch("recoJet_MTDnCells",             &tree_.recojet_MTDnCells);
+  tree->Branch("recoJet_MTDClutime",             &tree_.recojet_MTDClutime);
+  tree->Branch("recoJet_MTDCluenergy",             &tree_.recojet_MTDCluenergy);
+  tree->Branch("recoJet_MTDnClus",             &tree_.recojet_MTDnClus);
   tree->Branch("recoJet_HGCALtime",             &tree_.recojet_HGCALtime);
   tree->Branch("recoJet_HGCALenergy",             &tree_.recojet_HGCALenergy);
   tree->Branch("recoJet_HGCALnTracksters",             &tree_.recojet_HGCALnTracksters);
@@ -622,6 +663,9 @@ void Phase2TimingAnalyzer::clearVectors()
   tree_.recojet_MTDtime.clear();
   tree_.recojet_MTDenergy.clear();
   tree_.recojet_MTDnCells.clear();
+  tree_.recojet_MTDClutime.clear();
+  tree_.recojet_MTDCluenergy.clear();
+  tree_.recojet_MTDnClus.clear();
   tree_.recojet_HGCALtime.clear();
   tree_.recojet_HGCALenergy.clear();
   tree_.recojet_HGCALnTracksters.clear();
