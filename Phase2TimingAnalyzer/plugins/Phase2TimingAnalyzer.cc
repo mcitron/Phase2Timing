@@ -273,11 +273,11 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
     q_vx.push_back(vx);
     q_vy.push_back(vy);
     q_vz.push_back(vz);
-    q_ebphi.push_back(ecalIntersection[0]);
-    q_ebeta.push_back(ecalIntersection[1]);
+    q_ebphi.push_back(ecalIntersection[1]);
+    q_ebeta.push_back(ecalIntersection[0]);
     q_ebdelay.push_back(ecalIntersection[3]);
-    q_hgphi.push_back(hgcalIntersection[0]);
-    q_hgeta.push_back(hgcalIntersection[1]);
+    q_hgphi.push_back(hgcalIntersection[1]);
+    q_hgeta.push_back(hgcalIntersection[0]);
     q_hgdelay.push_back(hgcalIntersection[3]);
   }
 
@@ -398,16 +398,16 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   // Handle<View<ticl::Trackster>> tracksterTrkEMH;
   // Handle<View<ticl::Trackster>> tracksterTrkH;
     std::vector<ticl::Trackster> tracksters;
-    tracksters.reserve(tracksters.size() + distance(tracksterEMH->begin(),tracksterEMH->end()));
-    tracksters.insert(tracksters.end(),tracksterEMH->begin(),tracksterEMH->end());
+    // tracksters.reserve(tracksters.size() + distance(tracksterEMH->begin(),tracksterEMH->end()));
+    // tracksters.insert(tracksters.end(),tracksterEMH->begin(),tracksterEMH->end());
     tracksters.reserve(tracksters.size() + distance(tracksterMergeH->begin(),tracksterMergeH->end()));
     tracksters.insert(tracksters.end(),tracksterMergeH->begin(),tracksterMergeH->end());
-    tracksters.reserve(tracksters.size() + distance(tracksterHADH->begin(),tracksterHADH->end()));
-    tracksters.insert(tracksters.end(),tracksterHADH->begin(),tracksterHADH->end());
-    tracksters.reserve(tracksters.size() + distance(tracksterTrkEMH->begin(),tracksterTrkEMH->end()));
-    tracksters.insert(tracksters.end(),tracksterTrkEMH->begin(),tracksterTrkEMH->end());
-    tracksters.reserve(tracksters.size() + distance(tracksterTrkH->begin(),tracksterTrkH->end()));
-    tracksters.insert(tracksters.end(),tracksterTrkH->begin(),tracksterTrkH->end());
+    // tracksters.reserve(tracksters.size() + distance(tracksterHADH->begin(),tracksterHADH->end()));
+    // tracksters.insert(tracksters.end(),tracksterHADH->begin(),tracksterHADH->end());
+    // tracksters.reserve(tracksters.size() + distance(tracksterTrkEMH->begin(),tracksterTrkEMH->end()));
+    // tracksters.insert(tracksters.end(),tracksterTrkEMH->begin(),tracksterTrkEMH->end());
+    // tracksters.reserve(tracksters.size() + distance(tracksterTrkH->begin(),tracksterTrkH->end()));
+    // tracksters.insert(tracksters.end(),tracksterTrkH->begin(),tracksterTrkH->end());
     _jetTimingTools.jetTimeFromHgcalTracksters(recojet_iter, tracksters, weightedHGCALTimeTrackster, totalHGCALEnergyTrackster, HGCALnTracksters);
     recojet_HGCALenergy.push_back(totalHGCALEnergyTrackster);
     recojet_HGCALnTracksters.push_back(HGCALnTracksters);
