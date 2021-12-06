@@ -229,3 +229,84 @@ void JetTimingTools::jetTimeFromMTDCells(
     weightedTimeCell /= totalEmEnergyCell;
   }
 }
+
+
+
+//calculate jet time from mtd clusters
+void JetTimingTools::jetTimeFromMTDClus(
+    const reco::Jet& jet,
+    const edm::Handle<FTLClusterCollection>& mtdRecClusters,
+    float& weightedTimeClu,
+    float& totalEnergyClu,
+    uint& nClu, bool isBTL) {
+  
+  double dR;
+  double gp_x;
+  double gp_y;
+  double gp_z;
+  double gp_theta;
+  for (auto const& mtdClu : *mtdRecClusters) {
+    for(const auto& cluster : mtdClu){
+      if(isBTL){ 
+	if (cluster.energy() < 1.)
+	  continue;    
+	
+	BTLDetId cluId = cluster.id();
+	DetId detIdObject(cluId);
+	const auto& genericDet = mtdGeometry_->idToDetUnit(detIdObject);
+	if(genericDet == nullptr)
+	  continue;
+	const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(genericDet->topology());
+	const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());
+	
+	// --- Cluster position in the module reference frame
+	Local3DPoint local_point(topo.localX(cluster.x()), topo.localY(cluster.y()), 0.);
+	const auto& global_point = genericDet->toGlobal(local_point);
+	dR=reco::deltaR2(jet, global_point);
+	gp_x = global_point.x();
+	gp_y = global_point.y();
+	gp_z = global_point.z();
+      gp_theta = global_point.theta();
+      } else { 
+	if (cluster.energy() < 0.001)
+	  continue;    
+	
+	ETLDetId cluId = cluster.id();
+	DetId detIdObject(cluId);
+	const auto& genericDet = mtdGeometry_->idToDetUnit(detIdObject);
+	if(genericDet == nullptr)
+	  continue;
+
+	const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(genericDet->topology());
+	const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());
+	
+	// --- Cluster position in the module reference frame
+	Local3DPoint local_point(topo.localX(cluster.x()), topo.localY(cluster.y()), 0.);
+	const auto& global_point = genericDet->toGlobal(local_point);
+	dR=reco::deltaR2(jet, global_point);
+	gp_x = global_point.x();
+	gp_y = global_point.y();
+	gp_z = global_point.z();
+	gp_theta = global_point.theta();
+      }
+
+
+    if (dR > matchingRadius2_)
+      continue;
+    double tof = (TMath::Sqrt((gp_x)*(gp_x)+(gp_y)*(gp_y)+(gp_z)*(gp_z))/10)*1./(2.9979); 
+    //    std::cout<< "MTD CLUSTER:: "<<" x: "<<gp_x<<" y: "<<gp_y<<" z: "<<gp_z<<" e: "<<cluster.energy()<<" time: "<<cluster.time()<<" tof: "<<tof<<" timeDiff: "<<(cluster.time()-tof)<<std::endl;
+    weightedTimeClu += (cluster.time()) * cluster.energy() * sin(gp_theta);
+    totalEnergyClu += cluster.energy() * sin(gp_theta);
+    nClu++;
+
+    }
+  }
+ 
+  if (totalEnergyClu > 0) {
+    weightedTimeClu /= totalEnergyClu;
+  }
+
+}
+
+
+

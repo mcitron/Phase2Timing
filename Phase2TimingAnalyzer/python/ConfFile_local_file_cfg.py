@@ -43,6 +43,8 @@ process.demo = cms.EDAnalyzer('Phase2TimingAnalyzer',
                               ebRecHitsColl = cms.InputTag( 'ecalRecHit','EcalRecHitsEB',"RECO" ),
                               mtdBTLRecHitsColl = cms.InputTag( 'mtdRecHits','FTLBarrel',"RECO" ),
                               mtdETLRecHitsColl = cms.InputTag( 'mtdRecHits','FTLEndcap',"RECO" ),
+                              recBTLCluTag = cms.InputTag('mtdClusters', 'FTLBarrel'),
+                              recETLCluTag = cms.InputTag('mtdClusters', 'FTLEndcap'),
 )
 
 
