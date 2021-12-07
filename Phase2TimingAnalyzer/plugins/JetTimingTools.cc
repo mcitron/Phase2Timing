@@ -8,6 +8,8 @@ JetTimingTools::JetTimingTools(edm::ConsumesCollector && cc):
     ecalCellEnergyThresh_(0.5),
     ecalCellTimeThresh_(12.5),
     ecalCellTimeErrorThresh_(100),
+    hcalCellEnergyThresh_(1.),
+    hcalCellTimeThresh_(12.5),
     hgcalTracksterEnergyThresh_(0.5),
     hgcalTracksterTimeThresh_(12.5),
     hgcalTracksterTimeErrorThresh_(100),
@@ -20,6 +22,10 @@ JetTimingTools::JetTimingTools(edm::ConsumesCollector && cc):
 }
 
 void  JetTimingTools::setMatchingRadius(double matchingRadius) {matchingRadius2_ = matchingRadius*matchingRadius; }
+
+void  JetTimingTools::setHcalCellEnergyThreshold(double ecalCellEnergyThresh){ ecalCellEnergyThresh_ = ecalCellEnergyThresh;}
+
+void  JetTimingTools::setHcalCellTimeThreshold(double ecalCellTimeThresh){ ecalCellTimeThresh_ = ecalCellTimeThresh; }
 
 void  JetTimingTools::setEcalCellEnergyThreshold(double ecalCellEnergyThresh){ ecalCellEnergyThresh_ = ecalCellEnergyThresh;}
 
@@ -71,7 +77,7 @@ std::vector<double> JetTimingTools::surfaceIntersection(const reco::GenParticle&
     // double t1Light = TMath::Sqrt(zPos*zPos+radius*radius)/lightSpeed;
     ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<double>> intersectionXYZ(xPos,yPos,zPos);
     double t1Light = TMath::Sqrt((intersectionXYZ-parentPos).Mag2())/lightSpeed;
-    std::vector<double> outVec = {eta,phi,t1Light,t1+parentTime-t1Light,t1};
+    std::vector<double> outVec = {eta,phi,t1Light,(t1+parentTime-t1Light),t1};
     return outVec;
 }
 std::vector<double> JetTimingTools::endCapIntersection(const reco::GenParticle& genParticle, reco::GenParticle& genParticleMother, double zMin, double zMax){
@@ -107,8 +113,37 @@ std::vector<double> JetTimingTools::endCapIntersection(const reco::GenParticle& 
     double eta = -TMath::Log(TMath::Tan(theta/2.));
     ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<double>> intersectionXYZ(xPos,yPos,zPos);
     double t1Light = TMath::Sqrt((intersectionXYZ-parentPos).Mag2())/lightSpeed;
-    std::vector<double> outVec = {eta,phi,t1Light,t1+parentTime-t1Light,t1};
+    std::vector<double> outVec = {eta,phi,t1Light,(t1+parentTime-t1Light),t1};
     return outVec;
+}
+//calculate jet time from hcal cells
+void JetTimingTools::jetTimeFromHcalCells(
+    const reco::Jet& jet,
+    const edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>>& hcalRecHits,
+    float& weightedTimeCell,
+    float& totalEmEnergyCell,
+    uint& nCells,
+    bool useTDCHCAL){
+    for (auto const& hcalRH : hcalRecHits) {
+    if (hcalRH.energy() < hcalCellEnergyThresh_)
+      continue;
+    // if (hcalRH.timeError() <= 0. || hcalRH.timeError() > hcalCellTimeErrorThresh_)
+    //   continue;
+    if (useTDCHCAL and fabs(hcalRH.timeFalling()) > hcalCellTimeThresh_)
+      continue;
+    else if (!useTDCHCAL and fabs(hcalRH.time()) > hcalCellTimeThresh_)
+	continue;
+    auto const pos = caloGeometry_->getPosition(hcalRH.detid());
+    if (reco::deltaR2(jet, pos) > matchingRadius2_)
+      continue;
+    if (useTDCHCAL) weightedTimeCell += hcalRH.timeFalling() * hcalRH.energy() * sin(pos.theta());
+    else  weightedTimeCell += hcalRH.time() * hcalRH.energy() * sin(pos.theta());
+    totalEmEnergyCell += hcalRH.energy() * sin(pos.theta());
+    nCells++;
+  }
+  if (totalEmEnergyCell > 0) {
+    weightedTimeCell /= totalEmEnergyCell;
+    }
 }
 //calculate jet time from ecal cells
 void JetTimingTools::jetTimeFromEcalCells(
@@ -140,7 +175,7 @@ void JetTimingTools::jetTimeFromEcalCells(
     weightedTimeCell /= totalEmEnergyCell;
     }
 }
-//calculate jet time from ecal cells
+//calculate jet time from hgcal tracksters
 void JetTimingTools::jetTimeFromHgcalTracksters(
     const reco::Jet& jet,
     const std::vector<ticl::Trackster>& tracksters,
@@ -157,8 +192,8 @@ void JetTimingTools::jetTimeFromHgcalTracksters(
     auto const pos = trackster.barycenter();
     if (reco::deltaR2(jet, pos) > matchingRadius2_)
       continue;
-    weightedTimeTrackster += trackster.time() * trackster.regressed_energy() * sin(pos.theta());
-    totalEnergyTrackster += trackster.regressed_energy() * sin(pos.theta());
+    weightedTimeTrackster += trackster.time() * trackster.regressed_energy();
+    totalEnergyTrackster += trackster.regressed_energy();
     nTracksters++;
   }
   if (totalEnergyTrackster > 0) {

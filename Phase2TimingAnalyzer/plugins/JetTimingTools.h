@@ -7,6 +7,7 @@
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
 #include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
+#include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
@@ -45,6 +46,12 @@ public:
                             float&,
                             float&,
                             uint&);
+  void jetTimeFromHcalCells(const reco::Jet&,
+                            const edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>>&,
+                            float&,
+                            float&,
+                            uint&,
+			    bool);
   void jetTimeFromHgcalTracksters(const reco::Jet&,
                             const std::vector<ticl::Trackster>&,
                             float&,
@@ -66,6 +73,8 @@ public:
   void setEcalCellEnergyThreshold(double);
   void setEcalCellTimeThreshold(double );
   void setEcalCellTimeErrorThreshold(double );
+  void setHcalCellEnergyThreshold(double);
+  void setHcalCellTimeThreshold(double );
   void setHgcalTracksterEnergyThreshold(double);
   void setHgcalTracksterTimeThreshold(double );
   void setHgcalTracksterTimeErrorThreshold(double );
@@ -88,6 +97,9 @@ private:
     double ecalCellEnergyThresh_;
     double ecalCellTimeThresh_;
     double ecalCellTimeErrorThresh_;
+    double hcalCellEnergyThresh_;
+    double hcalCellTimeThresh_;
+    double hcalCellTimeErrorThresh_;
     double hgcalTracksterEnergyThresh_;
     double hgcalTracksterTimeThresh_;
     double hgcalTracksterTimeErrorThresh_;
