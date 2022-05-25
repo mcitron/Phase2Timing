@@ -22,6 +22,7 @@ JetTimingTools::JetTimingTools(edm::ConsumesCollector && cc):
 }
 
 void  JetTimingTools::setMatchingRadius(double matchingRadius) {matchingRadius2_ = matchingRadius*matchingRadius; }
+double  JetTimingTools::getMatchingRadius() {return matchingRadius2_;}
 
 void  JetTimingTools::setHcalCellEnergyThreshold(double ecalCellEnergyThresh){ ecalCellEnergyThresh_ = ecalCellEnergyThresh;}
 
@@ -89,11 +90,12 @@ std::vector<double> JetTimingTools::endCapIntersection(const reco::GenParticle& 
     ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<double>> parentPos = genParticleMother.vertex();
     double genParticleBeta = genParticleMother.p()/genParticleMother.energy();
     double parentTime = TMath::Sqrt((particlePos-parentPos).Mag2())/(lightSpeed*genParticleBeta);
+    double tDecayPosLight = TMath::Sqrt((particlePos-parentPos).Mag2())/lightSpeed;
     double xPos;
     double yPos;
     double zPos;
     double t1;
-    if (fabs(parentPos.z()) > zMax) return {1000.,1000.,1000.,1000.};
+    if (fabs(parentPos.z()) > zMax) return {1000.,1000.,1000.,1000.,1000.,parentTime-tDecayPosLight};
     else if (fabs(particlePos.z()) > zMin and fabs(particlePos.z()) < zMax)
     {
         xPos = particlePos.x();
@@ -113,7 +115,7 @@ std::vector<double> JetTimingTools::endCapIntersection(const reco::GenParticle& 
     double eta = -TMath::Log(TMath::Tan(theta/2.));
     ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<double>> intersectionXYZ(xPos,yPos,zPos);
     double t1Light = TMath::Sqrt((intersectionXYZ-parentPos).Mag2())/lightSpeed;
-    std::vector<double> outVec = {eta,phi,t1Light,(t1+parentTime-t1Light),t1};
+    std::vector<double> outVec = {eta,phi,t1Light,(t1+parentTime-t1Light),t1,parentTime-tDecayPosLight};
     return outVec;
 }
 //calculate jet time from hcal cells

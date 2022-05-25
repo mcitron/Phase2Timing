@@ -70,6 +70,7 @@ public:
 			      uint&,
 			      bool);
   void setMatchingRadius(double );
+  double getMatchingRadius();
   void setEcalCellEnergyThreshold(double);
   void setEcalCellTimeThreshold(double );
   void setEcalCellTimeErrorThreshold(double );
