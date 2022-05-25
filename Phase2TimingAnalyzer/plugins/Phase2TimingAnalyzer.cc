@@ -33,6 +33,7 @@
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 #include "Phase2Timing/Phase2TimingAnalyzer/plugins/JetTimingTools.h"
+#include "DataFormats/VertexReco/interface/Vertex.h"
 
 //
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
@@ -45,15 +46,42 @@
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "TMath.h"
 #include "TTree.h"
+#include "TGeoPolygon.h"
 
 
 //
 // class declaration
 //
 struct tree_struc_{
+    // std::vector<float> tracksterEM_time;
+    // std::vector<float> tracksterHAD_time;
+    // std::vector<float> tracksterTrkEM_time;
+    std::vector<float> tracksterMerge_time;
+    // std::vector<float> tracksterEM_timeError;
+    // std::vector<float> tracksterHAD_timeError;
+    // std::vector<float> tracksterTrkEM_timeError;
+    std::vector<float> tracksterMerge_timeError;
+    // std::vector<float> tracksterEM_e;
+    // std::vector<float> tracksterHAD_e;
+    // std::vector<float> tracksterTrkEM_e;
+    std::vector<float> tracksterMerge_e;
+    // std::vector<float> tracksterEM_eta;
+    // std::vector<float> tracksterHAD_eta;
+    // std::vector<float> tracksterTrkEM_eta;
+    std::vector<float> tracksterMerge_eta;
+    // std::vector<float> tracksterEM_phi;
+    // std::vector<float> tracksterHAD_phi;
+    // std::vector<float> tracksterTrkEM_phi;
+    std::vector<float> tracksterMerge_phi;
+    std::vector<uint> tracksterMerge_iJ;
+    std::vector<float> track_eta;
+    std::vector<float> track_phi;
+    std::vector<float> track_pt;
     std::vector<float> q_eta;
     std::vector<float> q_phi;
     std::vector<float> q_pt;
+    std::vector<int> q_pdgId;
+    std::vector<float> q_ctau;
     std::vector<float> q_vx;
     std::vector<float> q_vy;
     std::vector<float> q_vz;
@@ -61,10 +89,13 @@ struct tree_struc_{
     std::vector<float> q_ebphi;
     std::vector<float> q_ebdelay;
     std::vector<float> q_hgeta;
+    std::vector<float> q_pathdelay;
+    std::vector<bool> q_decayInHGCAL;
     std::vector<float> q_hgphi;
     std::vector<float> q_hgdelay;
   int                           nrecojets;
   int                           ngen;
+  int 				ntrack;
   std::vector<float>            recojet_pt;
   std::vector<float>            recojet_eta;
   std::vector<float>            recojet_phi;
@@ -72,6 +103,12 @@ struct tree_struc_{
   std::vector<float>            recojet_ECALtime;
   std::vector<float>            recojet_ECALenergy;
   std::vector<float>            recojet_ECALnCells;
+  std::vector<float>            recojet_HCALtime;
+  std::vector<float>            recojet_HCALenergy;
+  std::vector<float>            recojet_HCALnCells;
+  std::vector<float>            recojet_HCALTDCtime;
+  std::vector<float>            recojet_HCALTDCenergy;
+  std::vector<float>            recojet_HCALTDCnCells;
   std::vector<float>            recojet_MTDtime;
   std::vector<float>            recojet_MTDenergy;
   std::vector<float>            recojet_MTDnCells;
@@ -109,7 +146,8 @@ private:
   void clearVectors();
   JetTimingTools _jetTimingTools;
 
-  // ---------- member data -------------------- // 
+  // ---------- member data -------------------- //   
+  edm::EDGetTokenT<std::vector<reco::Vertex>> vertexCollectionToken_;
   edm::Service<TFileService> fs;
   const edm::EDGetTokenT< edm::View<reco::GenParticle> > _genParticles; 
   edm::Handle< edm::View<reco::GenParticle> > _genParticlesH;
@@ -117,6 +155,8 @@ private:
   edm::Handle< edm::View<reco::PFJet> > _recoak4PFJetsH;
   const edm::EDGetTokenT<edm::SortedCollection<EcalRecHit, edm::StrictWeakOrdering<EcalRecHit>>> ecalRecHitsEBToken_;
   edm::Handle< edm::SortedCollection<EcalRecHit, edm::StrictWeakOrdering<EcalRecHit>> > _ecalRecHitsEBH;
+  const edm::EDGetTokenT<edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>>> hcalRecHitsToken_;
+  edm::Handle< edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>> > _hcalRecHitsH;
   const edm::EDGetTokenT<edm::View<ticl::Trackster>> _tracksterEMToken;
   const edm::EDGetTokenT<edm::View<ticl::Trackster>> _tracksterMergeToken;
   const edm::EDGetTokenT<edm::View<ticl::Trackster>> _tracksterHADToken;
@@ -149,12 +189,15 @@ private:
 //
 Phase2TimingAnalyzer::Phase2TimingAnalyzer(const edm::ParameterSet& iConfig):
   _jetTimingTools(consumesCollector()),
+   vertexCollectionToken_(consumes<std::vector<reco::Vertex>>(edm::InputTag("offlinePrimaryVertices"))),
   _genParticles(consumes< edm::View<reco::GenParticle> >(iConfig.getParameter<edm::InputTag>("genParticles"))),
   _genParticlesH(),
   _recoak4PFJets(consumes< edm::View<reco::PFJet> >(iConfig.getParameter<edm::InputTag>("recoak4PFJets"))),
   _recoak4PFJetsH(),
   ecalRecHitsEBToken_{consumes<edm::SortedCollection<EcalRecHit, edm::StrictWeakOrdering<EcalRecHit>>>(												       iConfig.getParameter<edm::InputTag>("ebRecHitsColl"))},
   _ecalRecHitsEBH(),
+  hcalRecHitsToken_{consumes<edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>>>(												       iConfig.getParameter<edm::InputTag>("hcalRecHitsColl"))},
+  _hcalRecHitsH(),
   _tracksterEMToken(consumes<edm::View<ticl::Trackster>>(iConfig.getParameter<edm::InputTag>("ticlTrackstersEM"))),
   _tracksterMergeToken(consumes<edm::View<ticl::Trackster>>(iConfig.getParameter<edm::InputTag>("ticlTrackstersMerge"))),
   _tracksterHADToken(consumes<edm::View<ticl::Trackster>>(iConfig.getParameter<edm::InputTag>("ticlTrackstersHAD"))),
@@ -187,12 +230,14 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   using namespace edm;
 
    _jetTimingTools.init(iSetup);
+  Handle< std::vector<reco::Vertex> > vertexCollectionH;
   Handle<View<ticl::Trackster>> tracksterEMH;
   Handle<View<ticl::Trackster>> tracksterMergeH;
   Handle<View<ticl::Trackster>> tracksterHADH;
   Handle<View<ticl::Trackster>> tracksterTrkEMH;
   Handle<View<ticl::Trackster>> tracksterTrkH;
 
+  iEvent.getByToken(vertexCollectionToken_,vertexCollectionH);
   iEvent.getByToken(_genParticles, _genParticlesH);
   iEvent.getByToken(_recoak4PFJets, _recoak4PFJetsH);
   iEvent.getByToken(ecalRecHitsEBToken_, _ecalRecHitsEBH);
@@ -215,9 +260,36 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   int interestingquark = 0;
   int nrecojets = 0;
   int ngen = 0;
+  int ntrack = 0;
+  // std::vector<float> tracksterEM_time;
+  // std::vector<float> tracksterHAD_time;
+  // std::vector<float> tracksterTrkEM_time;
+  std::vector<float> tracksterMerge_time;
+  // std::vector<float> tracksterEM_timeError;
+  // std::vector<float> tracksterHAD_timeError;
+  // std::vector<float> tracksterTrkEM_timeError;
+  std::vector<float> tracksterMerge_timeError;
+  // std::vector<float> tracksterEM_e;
+  // std::vector<float> tracksterHAD_e;
+  // std::vector<float> tracksterTrkEM_e;
+  std::vector<float> tracksterMerge_e;
+  // std::vector<float> tracksterEM_eta;
+  // std::vector<float> tracksterHAD_eta;
+  // std::vector<float> tracksterTrkEM_eta;
+  std::vector<float> tracksterMerge_eta;
+  // std::vector<float> tracksterEM_phi;
+  // std::vector<float> tracksterHAD_phi;
+  // std::vector<float> tracksterTrkEM_phi;
+  std::vector<float> tracksterMerge_phi;
+  std::vector<uint> tracksterMerge_iJ;
+  std::vector<float> track_eta;
+  std::vector<float> track_phi;
+  std::vector<float> track_pt;
   std::vector<float> q_eta;
   std::vector<float> q_phi;
   std::vector<float> q_pt;
+  std::vector<int> q_pdgId;
+  std::vector<float> q_ctau;
   std::vector<float> q_vx;
   std::vector<float> q_vy;
   std::vector<float> q_vz;
@@ -225,8 +297,13 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   std::vector<float> q_ebphi;
   std::vector<float> q_ebdelay;
   std::vector<float> q_hgeta;
+std::vector<float> q_pathdelay;
+std::vector<bool> q_decayInHGCAL;
   std::vector<float> q_hgphi;
   std::vector<float> q_hgdelay;
+  std::vector<float>    genjet_pt;
+  std::vector<float>    genjet_eta;
+  std::vector<float>    genjet_phi;
   std::vector<float>    recojet_pt;
   std::vector<float>    recojet_eta;
   std::vector<float>    recojet_phi;
@@ -234,6 +311,12 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   std::vector<float>    recojet_ECALtime;
   std::vector<float>    recojet_ECALenergy;
   std::vector<float>    recojet_ECALnCells;
+  std::vector<float>    recojet_HCALtime;
+  std::vector<float>    recojet_HCALenergy;
+  std::vector<float>    recojet_HCALnCells;
+  std::vector<float>    recojet_HCALTDCtime;
+  std::vector<float>    recojet_HCALTDCenergy;
+  std::vector<float>    recojet_HCALTDCnCells;
   std::vector<float>    recojet_MTDtime;
   std::vector<float>    recojet_MTDenergy;
   std::vector<float>    recojet_MTDnCells;
@@ -255,13 +338,48 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
 
 
   if(debug)std::cout<<" [DEBUG MODE] --------------- LOOP ON GENPARTICLES --------------------------------------"<<std::endl; 
+  double xArr[11] = {
+    302.27485338939545,
+318.02128494261274,
+317.9398066651239,
+382.31971673724706,
+452.5378974580781,
+524.0255298602788,
+524.8161709233189,
+519.1267741643437,
+520.6084717290485,
+318.5222254634702,
+302.2919537686215
+};
+    double yArr[11] = {
+     130.99494029955773,
+     140.8085461659938,
+    159.38559343345372,
+     180.76609698932697,
+    271.0208926397953,
+    271.84070493798606,
+    91.57454256485633,
+    88.75700361119829,
+    50.92995885850013,
+    26.59410741049942,
+    27.096053836017063
+    };
+
+  TGeoPolygon hgcal(11);
+  hgcal.SetXY(xArr,yArr);
+  hgcal.FinishPolygon();
   for (const auto & genpar_iter : *_genParticlesH){
 
     if (genpar_iter.mother(0) == NULL)continue;
-    if(abs(genpar_iter.pdgId()) !=5  || genpar_iter.status() != 23)continue;
+    // if (genpar_iter.mother(0)->pdgId() == 6000113){
+    // std::cout << genpar_iter.pdgId() << " " << genpar_iter.status() << " " << genpar_iter.mother(0)->pdgId() << std::endl;
+    // }
+    if(abs(genpar_iter.pdgId()) > 16  || (genpar_iter.status() != 23 && genpar_iter.status() != 1) || genpar_iter.mother(0)->pdgId() != 6000113)continue;
     float vx = genpar_iter.vertex().x();
     float vy = genpar_iter.vertex().y();
     float vz = genpar_iter.vertex().z();
+    double vertexPos[2] = {genpar_iter.vertex().z(),TMath::Sqrt(genpar_iter.vertex().x()*genpar_iter.vertex().x()+genpar_iter.vertex().y()*genpar_iter.vertex().y())};
+    bool decayInHGCAL = hgcal.Contains(vertexPos);
     interestingquark++;
     reco::GenParticle * genParticleMother = (reco::GenParticle *) genpar_iter.mother();
     std::vector<double> ecalIntersection = _jetTimingTools.surfaceIntersection(genpar_iter,*genParticleMother,130);
@@ -270,24 +388,64 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
     q_pt.push_back(genpar_iter.pt());
     q_eta.push_back(genpar_iter.eta());
     q_phi.push_back(genpar_iter.phi());
+    double displacement = TMath::Sqrt((genpar_iter.vertex()-genParticleMother->vertex()).Mag2());
+    double genParticleBeta = genParticleMother->p()/genParticleMother->energy();
+    double genParticleGamma = 1./TMath::Sqrt(1.-genParticleBeta*genParticleBeta);
+    double ctau = displacement*10 / (genParticleBeta*genParticleGamma);
+    q_ctau.push_back(ctau);
     q_vx.push_back(vx);
     q_vy.push_back(vy);
     q_vz.push_back(vz);
+    q_pdgId.push_back(genpar_iter.pdgId());
     q_ebphi.push_back(ecalIntersection[1]);
     q_ebeta.push_back(ecalIntersection[0]);
-    q_ebdelay.push_back(ecalIntersection[3]);
+    q_ebdelay.push_back(ecalIntersection[3]*1E9);
     q_hgphi.push_back(hgcalIntersection[1]);
     q_hgeta.push_back(hgcalIntersection[0]);
-    q_hgdelay.push_back(hgcalIntersection[3]);
+    q_pathdelay.push_back(hgcalIntersection[5]*1E9);
+    q_hgdelay.push_back(hgcalIntersection[3]*1E9);
+    q_decayInHGCAL.push_back(decayInHGCAL);
   }
 
   auto const& ecalRecHitsEB = iEvent.get(ecalRecHitsEBToken_);
+  auto const& hcalRecHits = iEvent.get(hcalRecHitsToken_);
   auto const& mtdRecHitsBTL = iEvent.get(mtdRecHitsBTLToken_);
   auto const& mtdRecHitsETL = iEvent.get(mtdRecHitsETLToken_);
   //  auto const& mtdClusBTL = iEvent.get(btlRecCluToken_);
   //  auto const& mtdClusETL = iEvent.get(btlRecCluToken_);
+  reco::Vertex primaryVertex = vertexCollectionH->at(0);
+  for(auto pvTrack=primaryVertex.tracks_begin(); pvTrack!=primaryVertex.tracks_end(); pvTrack++){
+      track_pt.push_back((*pvTrack)->pt());
+      track_eta.push_back((*pvTrack)->eta());
+      track_phi.push_back((*pvTrack)->phi());
+      ntrack++;
+  }
 
   if(debug)std::cout<<" [DEBUG MODE] --------------- LOOP ON RECO JETS --------------------------------------"<<std::endl; 
+  std::vector<ticl::Trackster> tracksters;
+  tracksters.reserve(tracksters.size() + distance(tracksterMergeH->begin(),tracksterMergeH->end()));
+  tracksters.insert(tracksters.end(),tracksterMergeH->begin(),tracksterMergeH->end());
+    for (auto const & trackster : *tracksterMergeH){
+      tracksterMerge_time.push_back(trackster.time());
+      tracksterMerge_timeError.push_back(trackster.timeError());
+      tracksterMerge_e.push_back(trackster.regressed_energy());
+      tracksterMerge_eta.push_back(trackster.barycenter().eta());
+      tracksterMerge_phi.push_back(trackster.barycenter().phi());
+      uint matchI = 999;
+      double minMatch = 999;
+      uint iJ = -1;
+      for (const auto & recojet_iter : *_recoak4PFJetsH){
+
+	if(recojet_iter.pt()<20)continue;
+	if(fabs(recojet_iter.eta())>3)continue;
+	iJ +=1;
+	auto const pos = trackster.barycenter();
+	double matchR = reco::deltaR2(recojet_iter, pos);
+	if (matchR > _jetTimingTools.getMatchingRadius()) continue;
+        if (matchR < minMatch) {matchI = iJ;minMatch=matchR;}
+      }
+      tracksterMerge_iJ.push_back(matchI);
+  }
   for (const auto & recojet_iter : *_recoak4PFJetsH){
 
     if(recojet_iter.pt()<20)continue;
@@ -351,6 +509,30 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
     else
       recojet_ECALtime.push_back(-50);
 
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM HCAL MAHI --------------------------------------"<<std::endl; 
+    float weightedHCALTimeCell = 0;
+    float totalHCALEnergyCell = 0;
+    unsigned int HCALnCells = 0;
+    if(fabs(recojet_iter.eta())<1.4442)
+    _jetTimingTools.jetTimeFromHcalCells(recojet_iter, hcalRecHits, weightedHCALTimeCell, totalHCALEnergyCell, HCALnCells,false);
+    recojet_HCALenergy.push_back(totalHCALEnergyCell);
+    recojet_HCALnCells.push_back(HCALnCells);
+    if(HCALnCells>0)
+      recojet_HCALtime.push_back(weightedHCALTimeCell);
+    else
+      recojet_HCALtime.push_back(-50);
+
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM HCAL TDC --------------------------------------"<<std::endl; 
+    float weightedHCALTDCTimeCell = 0;
+    float totalHCALTDCEnergyCell = 0;
+    unsigned int HCALTDCnCells = 0;
+    _jetTimingTools.jetTimeFromHcalCells(recojet_iter, hcalRecHits, weightedHCALTDCTimeCell, totalHCALTDCEnergyCell, HCALTDCnCells,true);
+    recojet_HCALTDCenergy.push_back(totalHCALTDCEnergyCell);
+    recojet_HCALTDCnCells.push_back(HCALTDCnCells);
+    if(HCALTDCnCells>0)
+      recojet_HCALTDCtime.push_back(weightedHCALTDCTimeCell);
+    else
+      recojet_HCALTDCtime.push_back(-50);
 
 
     if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM MTD CELLS--------------------------------------"<<std::endl; 
@@ -397,11 +579,36 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   // Handle<View<ticl::Trackster>> tracksterHADH;
   // Handle<View<ticl::Trackster>> tracksterTrkEMH;
   // Handle<View<ticl::Trackster>> tracksterTrkH;
-    std::vector<ticl::Trackster> tracksters;
+    // for (auto const & trackster : *tracksterEMH){
+    //   tracksterEM_time.push_back(trackster.time());
+    //   tracksterEM_timeError.push_back(trackster.timeError());
+    //   tracksterEM_e.push_back(trackster.regressed_energy());
+    //   tracksterEM_eta.push_back(trackster.barycenter().eta());
+    //   tracksterEM_phi.push_back(trackster.barycenter().phi());
+    // }
+    // for (auto const & trackster : *tracksterHADH){
+    //   tracksterHAD_time.push_back(trackster.time());
+    //   tracksterHAD_timeError.push_back(trackster.timeError());
+    //   tracksterHAD_e.push_back(trackster.regressed_energy());
+    //   tracksterHAD_eta.push_back(trackster.barycenter().eta());
+    //   tracksterHAD_phi.push_back(trackster.barycenter().phi());
+    // }
+    // for (auto const & trackster : *tracksterTrkEMH){
+    //   tracksterTrkEM_time.push_back(trackster.time());
+    //   tracksterTrkEM_timeError.push_back(trackster.timeError());
+    //   tracksterTrkEM_e.push_back(trackster.regressed_energy());
+    //   tracksterTrkEM_eta.push_back(trackster.barycenter().eta());
+    //   tracksterTrkEM_phi.push_back(trackster.barycenter().phi());
+    // }
+    // for (auto const & trackster : *tracksterTrkH){
+    //   tracksterTrk_time.push_back(trackster.time());
+    //   tracksterTrk_timeError.push_back(trackster.timeError());
+    //   tracksterTrk_e.push_back(trackster.regressed_energy());
+    //   tracksterTrk_eta.push_back(trackster.barycenter().eta());
+    //   tracksterTrk_phi.push_back(trackster.barycenter().phi());
+    // }
     // tracksters.reserve(tracksters.size() + distance(tracksterEMH->begin(),tracksterEMH->end()));
     // tracksters.insert(tracksters.end(),tracksterEMH->begin(),tracksterEMH->end());
-    tracksters.reserve(tracksters.size() + distance(tracksterMergeH->begin(),tracksterMergeH->end()));
-    tracksters.insert(tracksters.end(),tracksterMergeH->begin(),tracksterMergeH->end());
     // tracksters.reserve(tracksters.size() + distance(tracksterHADH->begin(),tracksterHADH->end()));
     // tracksters.insert(tracksters.end(),tracksterHADH->begin(),tracksterHADH->end());
     // tracksters.reserve(tracksters.size() + distance(tracksterTrkEMH->begin(),tracksterTrkEMH->end()));
@@ -425,10 +632,47 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   initTreeStructure();
   clearVectors();
   tree_.ngen        = ngen;
+  tree_.ntrack = ntrack;
+  // for (uint it = 0; it < tracksterEM_time.size(); it++){
+  //   tree_.tracksterEM_time.push_back(tracksterEM_time[it]);
+  //   tree_.tracksterEM_timeError.push_back(tracksterEM_timeError[it]);
+  //   tree_.tracksterEM_e.push_back(tracksterEM_e[it]);
+  //   tree_.tracksterEM_eta.push_back(tracksterEM_eta[it]);
+  //   tree_.tracksterEM_phi.push_back(tracksterEM_phi[it]);
+  // }
+  // for (uint it = 0; it < tracksterHAD_time.size(); it++){
+  //   tree_.tracksterHAD_time.push_back(tracksterHAD_time[it]);
+  //   tree_.tracksterHAD_timeError.push_back(tracksterHAD_timeError[it]);
+  //   tree_.tracksterHAD_e.push_back(tracksterHAD_e[it]);
+  //   tree_.tracksterHAD_eta.push_back(tracksterHAD_eta[it]);
+  //   tree_.tracksterHAD_phi.push_back(tracksterHAD_phi[it]);
+  // }
+  for (uint it = 0; it < tracksterMerge_time.size(); it++){
+    tree_.tracksterMerge_time.push_back(tracksterMerge_time[it]);
+    tree_.tracksterMerge_timeError.push_back(tracksterMerge_timeError[it]);
+    tree_.tracksterMerge_e.push_back(tracksterMerge_e[it]);
+    tree_.tracksterMerge_eta.push_back(tracksterMerge_eta[it]);
+    tree_.tracksterMerge_phi.push_back(tracksterMerge_phi[it]);
+    tree_.tracksterMerge_iJ.push_back(tracksterMerge_iJ[it]);
+  }
+  // for (uint it = 0; it < tracksterTrkEM_time.size(); it++){
+  //   tree_.tracksterTrkEM_time.push_back(tracksterTrkEM_time[it]);
+  //   tree_.tracksterTrkEM_timeError.push_back(tracksterTrkEM_timeError[it]);
+  //   tree_.tracksterTrkEM_e.push_back(tracksterTrkEM_e[it]);
+  //   tree_.tracksterTrkEM_eta.push_back(tracksterTrkEM_eta[it]);
+  //   tree_.tracksterTrkEM_phi.push_back(tracksterTrkEM_phi[it]);
+  // }
+  for (int it = 0; it < ntrack; it++){
+    tree_.track_pt.push_back(track_pt[it]);
+    tree_.track_eta.push_back(track_eta[it]);
+    tree_.track_phi.push_back(track_phi[it]); 
+  }
   for (int ig = 0; ig < ngen; ig++){
     tree_.q_pt.push_back(q_pt[ig]);
     tree_.q_eta.push_back(q_eta[ig]);
     tree_.q_phi.push_back(q_phi[ig]); 
+    tree_.q_pdgId.push_back(q_pdgId[ig]);
+    tree_.q_ctau.push_back(q_ctau[ig]);
     tree_.q_vx.push_back(q_vx[ig]);
     tree_.q_vy.push_back(q_vy[ig]);
     tree_.q_vz.push_back(q_vz[ig]); 
@@ -437,6 +681,8 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
     tree_.q_ebdelay.push_back(q_ebdelay[ig]); 
     tree_.q_hgphi.push_back(q_hgphi[ig]); 
     tree_.q_hgeta.push_back(q_hgeta[ig]); 
+    tree_.q_pathdelay.push_back(q_pathdelay[ig]);
+    tree_.q_decayInHGCAL.push_back(q_decayInHGCAL[ig]);
     tree_.q_hgdelay.push_back(q_hgdelay[ig]); 
   }
   tree_.nrecojets        = nrecojets;
@@ -454,6 +700,12 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
     tree_.recojet_ECALtime.push_back(recojet_ECALtime[ij]);
     tree_.recojet_ECALenergy.push_back(recojet_ECALenergy[ij]);
     tree_.recojet_ECALnCells.push_back(recojet_ECALnCells[ij]);
+    tree_.recojet_HCALtime.push_back(recojet_HCALtime[ij]);
+    tree_.recojet_HCALenergy.push_back(recojet_HCALenergy[ij]);
+    tree_.recojet_HCALnCells.push_back(recojet_HCALnCells[ij]);
+    tree_.recojet_HCALTDCtime.push_back(recojet_HCALTDCtime[ij]);
+    tree_.recojet_HCALTDCenergy.push_back(recojet_HCALTDCenergy[ij]);
+    tree_.recojet_HCALTDCnCells.push_back(recojet_HCALTDCnCells[ij]);
     tree_.recojet_MTDtime.push_back(recojet_MTDtime[ij]);
     tree_.recojet_MTDenergy.push_back(recojet_MTDenergy[ij]);
     tree_.recojet_MTDnCells.push_back(recojet_MTDnCells[ij]);
@@ -478,17 +730,45 @@ void Phase2TimingAnalyzer::beginJob() {
   if (verbose_) std::cout << "Starting job" << std::endl;
   // --- set up output tree                                                                                                                                  
   tree = fs->make<TTree>("tree","tree");
+  // tree->Branch("tracksterEM_time",&tree_.tracksterEM_time);
+  // tree->Branch("tracksterEM_timeError",&tree_.tracksterEM_timeError);
+  // tree->Branch("tracksterEM_e",&tree_.tracksterEM_e);
+  // tree->Branch("tracksterEM_eta",&tree_.tracksterEM_eta);
+  // tree->Branch("tracksterEM_phi",&tree_.tracksterEM_phi);
+  // tree->Branch("tracksterHAD_time",&tree_.tracksterHAD_time);
+  // tree->Branch("tracksterHAD_timeError",&tree_.tracksterHAD_timeError);
+  // tree->Branch("tracksterHAD_e",&tree_.tracksterHAD_e);
+  // tree->Branch("tracksterHAD_eta",&tree_.tracksterHAD_eta);
+  // tree->Branch("tracksterHAD_phi",&tree_.tracksterHAD_phi);
+  tree->Branch("tracksterMerge_time",&tree_.tracksterMerge_time);
+  tree->Branch("tracksterMerge_timeError",&tree_.tracksterMerge_timeError);
+  tree->Branch("tracksterMerge_e",&tree_.tracksterMerge_e);
+  tree->Branch("tracksterMerge_eta",&tree_.tracksterMerge_eta);
+  tree->Branch("tracksterMerge_phi",&tree_.tracksterMerge_phi);
+  tree->Branch("tracksterMerge_iJ",&tree_.tracksterMerge_iJ);
+  // tree->Branch("tracksterTrkEM_time",&tree_.tracksterTrkEM_time);
+  // tree->Branch("tracksterTrkEM_timeError",&tree_.tracksterTrkEM_timeError);
+  // tree->Branch("tracksterTrkEM_e",&tree_.tracksterTrkEM_e);
+  // tree->Branch("tracksterTrkEM_eta",&tree_.tracksterTrkEM_eta);
+  // tree->Branch("tracksterTrkEM_phi",&tree_.tracksterTrkEM_phi);
+  tree->Branch("ntrack",              &tree_.ntrack,                "ntrack/I");
   tree->Branch("ngen",              &tree_.ngen,                "ngen/I");
+  tree->Branch("track_eta", &tree_.track_eta);
+  tree->Branch("track_phi", &tree_.track_phi);
+  tree->Branch("track_pt", &tree_.track_pt);
   tree->Branch("q_eta", &tree_.q_eta);
   tree->Branch("q_phi", &tree_.q_phi);
   tree->Branch("q_pt", &tree_.q_pt);
-  tree->Branch("q_vx", &tree_.q_vx);
   tree->Branch("q_ebeta", &tree_.q_ebeta);
   tree->Branch("q_ebphi", &tree_.q_ebphi);
   tree->Branch("q_ebdelay", &tree_.q_ebdelay);
   tree->Branch("q_hgeta", &tree_.q_hgeta);
+  tree->Branch("q_decayInHGCAL", &tree_.q_decayInHGCAL);
+  tree->Branch("q_pathdelay", &tree_.q_pathdelay);
   tree->Branch("q_hgphi", &tree_.q_hgphi);
   tree->Branch("q_hgdelay", &tree_.q_hgdelay);
+  tree->Branch("q_pdgId", &tree_.q_pdgId);
+  tree->Branch("q_ctau", &tree_.q_ctau);
   tree->Branch("q_vx", &tree_.q_vx);
   tree->Branch("q_vy", &tree_.q_vy);
   tree->Branch("q_vz", &tree_.q_vz);
@@ -501,6 +781,12 @@ void Phase2TimingAnalyzer::beginJob() {
   tree->Branch("recoJet_ECALtime",             &tree_.recojet_ECALtime);
   tree->Branch("recoJet_ECALenergy",             &tree_.recojet_ECALenergy);
   tree->Branch("recoJet_ECALnCells",             &tree_.recojet_ECALnCells);
+  tree->Branch("recoJet_HCALtime",             &tree_.recojet_HCALtime);
+  tree->Branch("recoJet_HCALenergy",             &tree_.recojet_HCALenergy);
+  tree->Branch("recoJet_HCALnCells",             &tree_.recojet_HCALnCells);
+  tree->Branch("recoJet_HCALTDCtime",             &tree_.recojet_HCALTDCtime);
+  tree->Branch("recoJet_HCALTDCenergy",             &tree_.recojet_HCALTDCenergy);
+  tree->Branch("recoJet_HCALTDCnCells",             &tree_.recojet_HCALTDCnCells);
   tree->Branch("recoJet_MTDtime",             &tree_.recojet_MTDtime);
   tree->Branch("recoJet_MTDenergy",             &tree_.recojet_MTDenergy);
   tree->Branch("recoJet_MTDnCells",             &tree_.recojet_MTDnCells);
@@ -535,6 +821,12 @@ void Phase2TimingAnalyzer::clearVectors()
   tree_.recojet_ECALtime.clear();
   tree_.recojet_ECALenergy.clear();
   tree_.recojet_ECALnCells.clear();
+  tree_.recojet_HCALtime.clear();
+  tree_.recojet_HCALenergy.clear();
+  tree_.recojet_HCALnCells.clear();
+  tree_.recojet_HCALTDCtime.clear();
+  tree_.recojet_HCALTDCenergy.clear();
+  tree_.recojet_HCALTDCnCells.clear();
   tree_.recojet_MTDtime.clear();
   tree_.recojet_MTDenergy.clear();
   tree_.recojet_MTDnCells.clear();
@@ -550,9 +842,35 @@ void Phase2TimingAnalyzer::clearVectors()
   tree_.recojet_closestEbGenR.clear();
   tree_.recojet_closestHgGenIndex.clear();
   tree_.recojet_closestHgGenR.clear();
+  // tree_.tracksterEM_time.clear();
+  // tree_.tracksterHAD_time.clear();
+  // tree_.tracksterTrkEM_time.clear();
+  tree_.tracksterMerge_time.clear();
+  // tree_.tracksterEM_timeError.clear();
+  // tree_.tracksterHAD_timeError.clear();
+  // tree_.tracksterTrkEM_timeError.clear();
+  tree_.tracksterMerge_timeError.clear();
+  // tree_.tracksterEM_e.clear();
+  // tree_.tracksterHAD_e.clear();
+  // tree_.tracksterTrkEM_e.clear();
+  tree_.tracksterMerge_e.clear();
+  // tree_.tracksterEM_eta.clear();
+  // tree_.tracksterHAD_eta.clear();
+  // tree_.tracksterTrkEM_eta.clear();
+  tree_.tracksterMerge_eta.clear();
+  // tree_.tracksterEM_phi.clear();
+  // tree_.tracksterHAD_phi.clear();
+  // tree_.tracksterTrkEM_phi.clear();
+  tree_.tracksterMerge_phi.clear();
+  tree_.tracksterMerge_iJ.clear();
+  tree_.track_pt.clear();
+  tree_.track_eta.clear();
+  tree_.track_phi.clear();
   tree_.q_pt.clear();
   tree_.q_eta.clear();
   tree_.q_phi.clear();
+  tree_.q_pdgId.clear();
+  tree_.q_ctau.clear();
   tree_.q_vx.clear();
   tree_.q_vy.clear();
   tree_.q_vz.clear();
@@ -561,6 +879,8 @@ void Phase2TimingAnalyzer::clearVectors()
   tree_.q_ebdelay.clear();
   tree_.q_hgphi.clear();
   tree_.q_hgeta.clear();
+  tree_.q_pathdelay.clear();
+  tree_.q_decayInHGCAL.clear();
   tree_.q_hgdelay.clear();
 }
 
