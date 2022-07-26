@@ -34,6 +34,7 @@
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 #include "Phase2Timing/Phase2TimingAnalyzer/plugins/JetTimingTools.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
 
 //
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
@@ -42,6 +43,8 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/JetReco/interface/Jet.h"
+#include "DataFormats/MuonReco/interface/Muon.h"
+#include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 #include "DataFormats/JetReco/interface/PFJet.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "TMath.h"
@@ -57,6 +60,7 @@ struct tree_struc_{
     // std::vector<float> tracksterHAD_time;
     // std::vector<float> tracksterTrkEM_time;
     std::vector<float> tracksterMerge_time;
+    std::vector<float> tracksterMerge_ticlIteration;
     // std::vector<float> tracksterEM_timeError;
     // std::vector<float> tracksterHAD_timeError;
     // std::vector<float> tracksterTrkEM_timeError;
@@ -74,9 +78,15 @@ struct tree_struc_{
     // std::vector<float> tracksterTrkEM_phi;
     std::vector<float> tracksterMerge_phi;
     std::vector<uint> tracksterMerge_iJ;
-    std::vector<float> track_eta;
-    std::vector<float> track_phi;
-    std::vector<float> track_pt;
+    std::vector<float> pvtrack_eta;
+    std::vector<float> pvtrack_phi;
+    std::vector<float> pvtrack_pt;
+    std::vector<float> pfCand_eta;
+    std::vector<float> pfCand_phi;
+    std::vector<int> pfCand_iJ;
+    std::vector<float> pfCand_pt;
+    std::vector<float> pfCand_time;
+    std::vector<float> pfCand_timeError;
     std::vector<float> q_eta;
     std::vector<float> q_phi;
     std::vector<float> q_pt;
@@ -88,14 +98,18 @@ struct tree_struc_{
     std::vector<float> q_ebeta;
     std::vector<float> q_ebphi;
     std::vector<float> q_ebdelay;
+    std::vector<float> q_etleta;
+    std::vector<float> q_etlphi;
+    std::vector<float> q_etldelay;
     std::vector<float> q_hgeta;
     std::vector<float> q_pathdelay;
     std::vector<bool> q_decayInHGCAL;
     std::vector<float> q_hgphi;
     std::vector<float> q_hgdelay;
-  int                           nrecojets;
   int                           ngen;
-  int 				ntrack;
+  int 				npvtrack;
+  int 				npfCand;
+  int                           nrecojets;
   std::vector<float>            recojet_pt;
   std::vector<float>            recojet_eta;
   std::vector<float>            recojet_phi;
@@ -122,8 +136,76 @@ struct tree_struc_{
   std::vector<float>  recojet_closestGenR;
   std::vector<float>  recojet_closestEbGenIndex;
   std::vector<float>  recojet_closestEbGenR;
+  std::vector<float>  recojet_closestEtlGenIndex;
+  std::vector<float>  recojet_closestEtlGenR;
   std::vector<float>  recojet_closestHgGenIndex;
   std::vector<float>  recojet_closestHgGenR;
+  int                           nmuons;
+  std::vector<float>            muon_pt;
+  std::vector<bool> 		muon_tightId;
+  std::vector<bool> 		muon_looseId;
+  std::vector<bool> 		muon_tightIso;
+  std::vector<bool> 		muon_looseIso;
+  std::vector<float>            muon_eta;
+  std::vector<float>            muon_phi;
+  std::vector<float>            muon_e;
+  std::vector<float>            muon_ECALtime;
+  std::vector<float>            muon_ECALenergy;
+  std::vector<float>            muon_ECALnCells;
+  std::vector<float>            muon_HCALtime;
+  std::vector<float>            muon_HCALenergy;
+  std::vector<float>            muon_HCALnCells;
+  std::vector<float>            muon_HCALTDCtime;
+  std::vector<float>            muon_HCALTDCenergy;
+  std::vector<float>            muon_HCALTDCnCells;
+  std::vector<float>            muon_MTDtime;
+  std::vector<float>            muon_MTDenergy;
+  std::vector<float>            muon_MTDnCells;
+  std::vector<float>            muon_MTDClutime;
+  std::vector<float>            muon_MTDCluenergy;
+  std::vector<float>            muon_MTDnClus;
+  std::vector<float>            muon_HGCALtime;
+  std::vector<float>            muon_HGCALenergy;
+  std::vector<float>            muon_HGCALnTracksters;
+  std::vector<float>  muon_closestGenIndex;
+  std::vector<float>  muon_closestGenR;
+  std::vector<float>  muon_closestEbGenIndex;
+  std::vector<float>  muon_closestEbGenR;
+  std::vector<float>  muon_closestEtlGenIndex;
+  std::vector<float>  muon_closestEtlGenR;
+  std::vector<float>  muon_closestHgGenIndex;
+  std::vector<float>  muon_closestHgGenR;
+  int                           nelectrons;
+  std::vector<float>            electron_pt;
+  std::vector<float>            electron_eta;
+  std::vector<float>            electron_phi;
+  std::vector<float>            electron_e;
+  std::vector<float>            electron_ECALtime;
+  std::vector<float>            electron_ECALenergy;
+  std::vector<float>            electron_ECALnCells;
+  std::vector<float>            electron_HCALtime;
+  std::vector<float>            electron_HCALenergy;
+  std::vector<float>            electron_HCALnCells;
+  std::vector<float>            electron_HCALTDCtime;
+  std::vector<float>            electron_HCALTDCenergy;
+  std::vector<float>            electron_HCALTDCnCells;
+  std::vector<float>            electron_MTDtime;
+  std::vector<float>            electron_MTDenergy;
+  std::vector<float>            electron_MTDnCells;
+  std::vector<float>            electron_MTDClutime;
+  std::vector<float>            electron_MTDCluenergy;
+  std::vector<float>            electron_MTDnClus;
+  std::vector<float>            electron_HGCALtime;
+  std::vector<float>            electron_HGCALenergy;
+  std::vector<float>            electron_HGCALnTracksters;
+  std::vector<float>  electron_closestGenIndex;
+  std::vector<float>  electron_closestGenR;
+  std::vector<float>  electron_closestEbGenIndex;
+  std::vector<float>  electron_closestEbGenR;
+  std::vector<float>  electron_closestEtlGenIndex;
+  std::vector<float>  electron_closestEtlGenR;
+  std::vector<float>  electron_closestHgGenIndex;
+  std::vector<float>  electron_closestHgGenR;
 };
 
 // If the analyzer does not use TFileService, please remove
@@ -147,7 +229,10 @@ private:
   JetTimingTools _jetTimingTools;
 
   // ---------- member data -------------------- //   
+  edm::EDGetTokenT<std::vector<reco::GsfElectron>> electronInputToken_;
+  edm::EDGetTokenT<std::vector<reco::Muon>> muonInputToken_;
   edm::EDGetTokenT<std::vector<reco::Vertex>> vertexCollectionToken_;
+  edm::EDGetTokenT<std::vector<reco::PFCandidate>> pfCandidatesToken_;
   edm::Service<TFileService> fs;
   const edm::EDGetTokenT< edm::View<reco::GenParticle> > _genParticles; 
   edm::Handle< edm::View<reco::GenParticle> > _genParticlesH;
@@ -189,7 +274,10 @@ private:
 //
 Phase2TimingAnalyzer::Phase2TimingAnalyzer(const edm::ParameterSet& iConfig):
   _jetTimingTools(consumesCollector()),
+   electronInputToken_(consumes<std::vector<reco::GsfElectron>>(edm::InputTag("gedGsfElectrons"))),
+   muonInputToken_(consumes<std::vector<reco::Muon>>(edm::InputTag("muons"))),
    vertexCollectionToken_(consumes<std::vector<reco::Vertex>>(edm::InputTag("offlinePrimaryVertices"))),
+   pfCandidatesToken_(consumes<std::vector<reco::PFCandidate>>(edm::InputTag("pfCandidates"))),
   _genParticles(consumes< edm::View<reco::GenParticle> >(iConfig.getParameter<edm::InputTag>("genParticles"))),
   _genParticlesH(),
   _recoak4PFJets(consumes< edm::View<reco::PFJet> >(iConfig.getParameter<edm::InputTag>("recoak4PFJets"))),
@@ -231,13 +319,19 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
 
    _jetTimingTools.init(iSetup);
   Handle< std::vector<reco::Vertex> > vertexCollectionH;
+  Handle<std::vector<reco::PFCandidate>> pfCandidatesH;
   Handle<View<ticl::Trackster>> tracksterEMH;
   Handle<View<ticl::Trackster>> tracksterMergeH;
   Handle<View<ticl::Trackster>> tracksterHADH;
   Handle<View<ticl::Trackster>> tracksterTrkEMH;
   Handle<View<ticl::Trackster>> tracksterTrkH;
+  Handle<std::vector<reco::Muon>> muonsH;
+  Handle<std::vector<reco::GsfElectron>> electronsH;
 
   iEvent.getByToken(vertexCollectionToken_,vertexCollectionH);
+  iEvent.getByToken(electronInputToken_, electronsH); 
+  iEvent.getByToken(muonInputToken_, muonsH); 
+  iEvent.getByToken(pfCandidatesToken_,pfCandidatesH);
   iEvent.getByToken(_genParticles, _genParticlesH);
   iEvent.getByToken(_recoak4PFJets, _recoak4PFJetsH);
   iEvent.getByToken(ecalRecHitsEBToken_, _ecalRecHitsEBH);
@@ -259,12 +353,16 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   //variable declaration
   int interestingquark = 0;
   int nrecojets = 0;
+  int nmuons = 0;
+  int nelectrons = 0;
   int ngen = 0;
-  int ntrack = 0;
+  int npvtrack = 0;
+  int npfCand = 0;
   // std::vector<float> tracksterEM_time;
   // std::vector<float> tracksterHAD_time;
   // std::vector<float> tracksterTrkEM_time;
   std::vector<float> tracksterMerge_time;
+  std::vector<int> tracksterMerge_ticlIteration;
   // std::vector<float> tracksterEM_timeError;
   // std::vector<float> tracksterHAD_timeError;
   // std::vector<float> tracksterTrkEM_timeError;
@@ -282,9 +380,15 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   // std::vector<float> tracksterTrkEM_phi;
   std::vector<float> tracksterMerge_phi;
   std::vector<uint> tracksterMerge_iJ;
-  std::vector<float> track_eta;
-  std::vector<float> track_phi;
-  std::vector<float> track_pt;
+  std::vector<float> pfCand_eta;
+  std::vector<float> pfCand_phi;
+  std::vector<int> pfCand_iJ;
+  std::vector<float> pfCand_pt;
+  std::vector<float> pfCand_time;
+  std::vector<float> pfCand_timeError;
+  std::vector<float> pvtrack_eta;
+  std::vector<float> pvtrack_phi;
+  std::vector<float> pvtrack_pt;
   std::vector<float> q_eta;
   std::vector<float> q_phi;
   std::vector<float> q_pt;
@@ -296,6 +400,9 @@ void Phase2TimingAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   std::vector<float> q_ebeta;
   std::vector<float> q_ebphi;
   std::vector<float> q_ebdelay;
+  std::vector<float> q_etleta;
+  std::vector<float> q_etlphi;
+  std::vector<float> q_etldelay;
   std::vector<float> q_hgeta;
 std::vector<float> q_pathdelay;
 std::vector<bool> q_decayInHGCAL;
@@ -330,8 +437,74 @@ std::vector<bool> q_decayInHGCAL;
   std::vector<float>  recojet_closestGenR;
   std::vector<float>  recojet_closestEbGenIndex;
   std::vector<float>  recojet_closestEbGenR;
+  std::vector<float>  recojet_closestEtlGenIndex;
+  std::vector<float>  recojet_closestEtlGenR;
   std::vector<float>  recojet_closestHgGenIndex;
   std::vector<float>  recojet_closestHgGenR;
+  std::vector<float>    muon_pt;
+    std::vector<bool> muon_tightId;
+    std::vector<bool> muon_looseId;
+    std::vector<bool> muon_tightIso;
+    std::vector<bool> muon_looseIso;
+  std::vector<float>    muon_eta;
+  std::vector<float>    muon_phi;
+  std::vector<float>    muon_e;
+  std::vector<float>    muon_ECALtime;
+  std::vector<float>    muon_ECALenergy;
+  std::vector<float>    muon_ECALnCells;
+  std::vector<float>    muon_HCALtime;
+  std::vector<float>    muon_HCALenergy;
+  std::vector<float>    muon_HCALnCells;
+  std::vector<float>    muon_HCALTDCtime;
+  std::vector<float>    muon_HCALTDCenergy;
+  std::vector<float>    muon_HCALTDCnCells;
+  std::vector<float>    muon_MTDtime;
+  std::vector<float>    muon_MTDenergy;
+  std::vector<float>    muon_MTDnCells;
+  std::vector<float>            muon_MTDClutime;
+  std::vector<float>            muon_MTDCluenergy;
+  std::vector<float>            muon_MTDnClus;
+  std::vector<float>    muon_HGCALtime;
+  std::vector<float>    muon_HGCALenergy;
+  std::vector<float>    muon_HGCALnTracksters;
+  std::vector<float>  muon_closestGenIndex;
+  std::vector<float>  muon_closestGenR;
+  std::vector<float>  muon_closestEbGenIndex;
+  std::vector<float>  muon_closestEbGenR;
+  std::vector<float>  muon_closestEtlGenIndex;
+  std::vector<float>  muon_closestEtlGenR;
+  std::vector<float>  muon_closestHgGenIndex;
+  std::vector<float>  muon_closestHgGenR;
+  std::vector<float>    electron_pt;
+  std::vector<float>    electron_eta;
+  std::vector<float>    electron_phi;
+  std::vector<float>    electron_e;
+  std::vector<float>    electron_ECALtime;
+  std::vector<float>    electron_ECALenergy;
+  std::vector<float>    electron_ECALnCells;
+  std::vector<float>    electron_HCALtime;
+  std::vector<float>    electron_HCALenergy;
+  std::vector<float>    electron_HCALnCells;
+  std::vector<float>    electron_HCALTDCtime;
+  std::vector<float>    electron_HCALTDCenergy;
+  std::vector<float>    electron_HCALTDCnCells;
+  std::vector<float>    electron_MTDtime;
+  std::vector<float>    electron_MTDenergy;
+  std::vector<float>    electron_MTDnCells;
+  std::vector<float>            electron_MTDClutime;
+  std::vector<float>            electron_MTDCluenergy;
+  std::vector<float>            electron_MTDnClus;
+  std::vector<float>    electron_HGCALtime;
+  std::vector<float>    electron_HGCALenergy;
+  std::vector<float>    electron_HGCALnTracksters;
+  std::vector<float>  electron_closestGenIndex;
+  std::vector<float>  electron_closestGenR;
+  std::vector<float>  electron_closestEbGenIndex;
+  std::vector<float>  electron_closestEbGenR;
+  std::vector<float>  electron_closestEtlGenIndex;
+  std::vector<float>  electron_closestEtlGenR;
+  std::vector<float>  electron_closestHgGenIndex;
+  std::vector<float>  electron_closestHgGenR;
 
   
   bool debug=0;
@@ -378,11 +551,12 @@ std::vector<bool> q_decayInHGCAL;
     float vx = genpar_iter.vertex().x();
     float vy = genpar_iter.vertex().y();
     float vz = genpar_iter.vertex().z();
-    double vertexPos[2] = {genpar_iter.vertex().z(),TMath::Sqrt(genpar_iter.vertex().x()*genpar_iter.vertex().x()+genpar_iter.vertex().y()*genpar_iter.vertex().y())};
+    double vertexPos[2] = {fabs(genpar_iter.vertex().z()),TMath::Sqrt(genpar_iter.vertex().x()*genpar_iter.vertex().x()+genpar_iter.vertex().y()*genpar_iter.vertex().y())};
     bool decayInHGCAL = hgcal.Contains(vertexPos);
     interestingquark++;
     reco::GenParticle * genParticleMother = (reco::GenParticle *) genpar_iter.mother();
     std::vector<double> ecalIntersection = _jetTimingTools.surfaceIntersection(genpar_iter,*genParticleMother,130);
+    std::vector<double> etlIntersection = _jetTimingTools.endCapIntersection(genpar_iter,*genParticleMother,300,300);
     std::vector<double> hgcalIntersection = _jetTimingTools.endCapIntersection(genpar_iter,*genParticleMother,300,520);
     ngen++;
     q_pt.push_back(genpar_iter.pt());
@@ -400,6 +574,9 @@ std::vector<bool> q_decayInHGCAL;
     q_ebphi.push_back(ecalIntersection[1]);
     q_ebeta.push_back(ecalIntersection[0]);
     q_ebdelay.push_back(ecalIntersection[3]*1E9);
+    q_etlphi.push_back(etlIntersection[1]);
+    q_etleta.push_back(etlIntersection[0]);
+    q_etldelay.push_back(etlIntersection[3]*1E9);
     q_hgphi.push_back(hgcalIntersection[1]);
     q_hgeta.push_back(hgcalIntersection[0]);
     q_pathdelay.push_back(hgcalIntersection[5]*1E9);
@@ -413,12 +590,13 @@ std::vector<bool> q_decayInHGCAL;
   auto const& mtdRecHitsETL = iEvent.get(mtdRecHitsETLToken_);
   //  auto const& mtdClusBTL = iEvent.get(btlRecCluToken_);
   //  auto const& mtdClusETL = iEvent.get(btlRecCluToken_);
+  //
   reco::Vertex primaryVertex = vertexCollectionH->at(0);
   for(auto pvTrack=primaryVertex.tracks_begin(); pvTrack!=primaryVertex.tracks_end(); pvTrack++){
-      track_pt.push_back((*pvTrack)->pt());
-      track_eta.push_back((*pvTrack)->eta());
-      track_phi.push_back((*pvTrack)->phi());
-      ntrack++;
+      pvtrack_pt.push_back((*pvTrack)->pt());
+      pvtrack_eta.push_back((*pvTrack)->eta());
+      pvtrack_phi.push_back((*pvTrack)->phi());
+      npvtrack++;
   }
 
   if(debug)std::cout<<" [DEBUG MODE] --------------- LOOP ON RECO JETS --------------------------------------"<<std::endl; 
@@ -426,7 +604,9 @@ std::vector<bool> q_decayInHGCAL;
   tracksters.reserve(tracksters.size() + distance(tracksterMergeH->begin(),tracksterMergeH->end()));
   tracksters.insert(tracksters.end(),tracksterMergeH->begin(),tracksterMergeH->end());
     for (auto const & trackster : *tracksterMergeH){
+      if (trackster.regressed_energy() < 1.) continue;
       tracksterMerge_time.push_back(trackster.time());
+      tracksterMerge_ticlIteration.push_back(trackster.ticlIteration());
       tracksterMerge_timeError.push_back(trackster.timeError());
       tracksterMerge_e.push_back(trackster.regressed_energy());
       tracksterMerge_eta.push_back(trackster.barycenter().eta());
@@ -436,7 +616,7 @@ std::vector<bool> q_decayInHGCAL;
       uint iJ = -1;
       for (const auto & recojet_iter : *_recoak4PFJetsH){
 
-	if(recojet_iter.pt()<20)continue;
+	if(recojet_iter.pt()<10)continue;
 	if(fabs(recojet_iter.eta())>3)continue;
 	iJ +=1;
 	auto const pos = trackster.barycenter();
@@ -446,20 +626,346 @@ std::vector<bool> q_decayInHGCAL;
       }
       tracksterMerge_iJ.push_back(matchI);
   }
+  for (const auto & electron_iter : *electronsH){
+
+    if(electron_iter.pt()<10)continue;
+    if(fabs(electron_iter.eta())>3)continue;
+    
+    nelectrons++;
+    electron_pt.push_back(electron_iter.pt());
+    electron_eta.push_back(electron_iter.eta());
+    electron_phi.push_back(electron_iter.phi());
+    electron_e.push_back(electron_iter.energy());
+    int closestGenIndex = -1;
+    float closestGenR = 999;
+    int closestEbGenIndex = -1;
+    float closestEbGenR = 999;
+    int closestEtlGenIndex = -1;
+    float closestEtlGenR = 999;
+    int closestHgGenIndex = -1;
+    float closestHgGenR = 999;
+    for (int ig = 0; ig < ngen; ig++){
+	TLorentzVector jetVec;
+	jetVec.SetPtEtaPhiM(electron_iter.pt(),electron_iter.eta(),electron_iter.phi(),0);
+	TLorentzVector pos;
+	pos.SetPtEtaPhiM(1,q_eta[ig],q_phi[ig],0);
+	TLorentzVector ebPos;
+	ebPos.SetPtEtaPhiM(1,q_ebeta[ig],q_ebphi[ig],0);
+	TLorentzVector hgPos;
+	hgPos.SetPtEtaPhiM(1,q_hgeta[ig],q_hgphi[ig],0);
+	TLorentzVector etlPos;
+	etlPos.SetPtEtaPhiM(1,q_etleta[ig],q_etlphi[ig],0);
+	
+	float ebDeltaR = jetVec.DeltaR(ebPos);
+	if (ebDeltaR < 0.4 and closestEbGenR > ebDeltaR){
+	    closestEbGenR = ebDeltaR;
+	    closestEbGenIndex = ig;
+	}
+	float etlDeltaR = jetVec.DeltaR(etlPos);
+	if (etlDeltaR < 0.4 and closestEtlGenR > etlDeltaR){
+	    closestEtlGenR = etlDeltaR;
+	    closestEtlGenIndex = ig;
+	}
+	float hgDeltaR = jetVec.DeltaR(hgPos);
+	if (hgDeltaR < 0.4 and closestHgGenR > hgDeltaR){
+	    closestHgGenR = hgDeltaR;
+	    closestHgGenIndex = ig;
+	}
+	float genDeltaR = jetVec.DeltaR(pos);
+	if (genDeltaR < 0.4 and closestGenR > genDeltaR){
+	    closestGenR = genDeltaR;
+	    closestGenIndex = ig;
+	}
+    }
+    electron_closestGenIndex.push_back(closestGenIndex);
+    electron_closestGenR.push_back(closestGenR);
+    electron_closestEbGenIndex.push_back(closestEbGenIndex);
+    electron_closestEbGenR.push_back(closestEbGenR);
+    electron_closestEtlGenIndex.push_back(closestEtlGenIndex);
+    electron_closestEtlGenR.push_back(closestEtlGenR);
+    electron_closestHgGenIndex.push_back(closestHgGenIndex);
+    electron_closestHgGenR.push_back(closestHgGenR);
+    
+
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM ECAL --------------------------------------"<<std::endl; 
+    float weightedECALTimeCell = 0;
+    float totalECALEnergyCell = 0;
+    unsigned int ECALnCells = 0;
+    if(fabs(electron_iter.eta())<1.4442)
+      _jetTimingTools.jetTimeFromEcalCells(electron_iter, ecalRecHitsEB, weightedECALTimeCell, totalECALEnergyCell, ECALnCells);
+    electron_ECALenergy.push_back(totalECALEnergyCell);
+    electron_ECALnCells.push_back(ECALnCells);
+    if(ECALnCells>0)
+      electron_ECALtime.push_back(weightedECALTimeCell);
+    else
+      electron_ECALtime.push_back(-50);
+
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM HCAL MAHI --------------------------------------"<<std::endl; 
+    float weightedHCALTimeCell = 0;
+    float totalHCALEnergyCell = 0;
+    unsigned int HCALnCells = 0;
+    if(fabs(electron_iter.eta())<1.4442)
+    _jetTimingTools.jetTimeFromHcalCells(electron_iter, hcalRecHits, weightedHCALTimeCell, totalHCALEnergyCell, HCALnCells,false);
+    electron_HCALenergy.push_back(totalHCALEnergyCell);
+    electron_HCALnCells.push_back(HCALnCells);
+    if(HCALnCells>0)
+      electron_HCALtime.push_back(weightedHCALTimeCell);
+    else
+      electron_HCALtime.push_back(-50);
+
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM HCAL TDC --------------------------------------"<<std::endl; 
+    float weightedHCALTDCTimeCell = 0;
+    float totalHCALTDCEnergyCell = 0;
+    unsigned int HCALTDCnCells = 0;
+    _jetTimingTools.jetTimeFromHcalCells(electron_iter, hcalRecHits, weightedHCALTDCTimeCell, totalHCALTDCEnergyCell, HCALTDCnCells,true);
+    electron_HCALTDCenergy.push_back(totalHCALTDCEnergyCell);
+    electron_HCALTDCnCells.push_back(HCALTDCnCells);
+    if(HCALTDCnCells>0)
+      electron_HCALTDCtime.push_back(weightedHCALTDCTimeCell);
+    else
+      electron_HCALTDCtime.push_back(-50);
+
+
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM MTD CELLS--------------------------------------"<<std::endl; 
+    float weightedMTDTimeCell = 0;
+    float totalMTDEnergyCell = 0;
+    unsigned int MTDnCells = 0;
+    if(fabs(electron_iter.eta())<1.4442)
+      _jetTimingTools.jetTimeFromMTDCells(electron_iter, mtdRecHitsBTL, weightedMTDTimeCell, totalMTDEnergyCell, MTDnCells,1);
+    else if(fabs(electron_iter.eta())>1.4442 && fabs(electron_iter.eta()) <3.0){
+      _jetTimingTools.jetTimeFromMTDCells(electron_iter, mtdRecHitsETL, weightedMTDTimeCell, totalMTDEnergyCell, MTDnCells,0);
+    }
+
+    electron_MTDenergy.push_back(totalMTDEnergyCell);
+    electron_MTDnCells.push_back(MTDnCells);
+    if(MTDnCells>0)
+      electron_MTDtime.push_back(weightedMTDTimeCell);
+    else
+      electron_MTDtime.push_back(-50);
+
+
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM MTD CLUSTERS--------------------------------------"<<std::endl; 
+    float weightedMTDTimeClu = 0;
+    float totalMTDEnergyClu = 0;
+    unsigned int MTDnClus = 0;
+    if(fabs(electron_iter.eta())<1.4442)
+      _jetTimingTools.jetTimeFromMTDClus(electron_iter, _btlRecCluH, weightedMTDTimeClu, totalMTDEnergyClu, MTDnClus,1);
+    else if(fabs(electron_iter.eta())>1.4442 && fabs(electron_iter.eta()) <3.0){
+      _jetTimingTools.jetTimeFromMTDClus(electron_iter, _etlRecCluH, weightedMTDTimeClu, totalMTDEnergyClu, MTDnClus,0);
+    }
+    electron_MTDCluenergy.push_back(totalMTDEnergyClu);
+    electron_MTDnClus.push_back(MTDnClus);
+    if(MTDnClus>0)
+      electron_MTDClutime.push_back(weightedMTDTimeClu);
+    else
+      electron_MTDClutime.push_back(-50);
+
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM HGCAL --------------------------------------"<<std::endl; 
+    float weightedHGCALTimeTrackster = 0;
+    float totalHGCALEnergyTrackster = 0;
+    unsigned int HGCALnTracksters = 0;
+    _jetTimingTools.jetTimeFromHgcalTracksters(electron_iter, tracksters, weightedHGCALTimeTrackster, totalHGCALEnergyTrackster, HGCALnTracksters);
+    electron_HGCALenergy.push_back(totalHGCALEnergyTrackster);
+    electron_HGCALnTracksters.push_back(HGCALnTracksters);
+    if(HGCALnTracksters>0)
+      electron_HGCALtime.push_back(weightedHGCALTimeTrackster);
+    else
+      electron_HGCALtime.push_back(-50);
+  }
+  for (const auto & muon_iter : *muonsH){
+
+    if(muon_iter.pt()<10)continue;
+    if(fabs(muon_iter.eta())>3)continue;
+    
+    nmuons++;
+    muon_pt.push_back(muon_iter.pt());
+    bool passLooseId = false;
+    bool passTightId = false;
+    bool passLooseIso = false;
+    bool passTightIso = false;
+    if (muon_iter.isGlobalMuon() && muon_iter.isPFMuon()){
+	passLooseId = true;
+	if (muon_iter.globalTrack()->normalizedChi2() < 10. &&  muon_iter.globalTrack()->hitPattern().numberOfValidMuonHits() > 0 && fabs(muon_iter.muonBestTrack()->dxy(primaryVertex.position())) < 0.2 &&  fabs(muon_iter.muonBestTrack()->dz(primaryVertex.position())) < 0.5 &&  muon_iter.innerTrack()->hitPattern().numberOfValidPixelHits() > 0 && muon_iter.innerTrack()->hitPattern().trackerLayersWithMeasurement() > 5)
+	{
+	    passTightId = true;
+	}
+    }
+    double pfIso = (muon_iter.pfIsolationR04().sumChargedHadronPt + std::max(0., muon_iter.pfIsolationR04().sumNeutralHadronEt + muon_iter.pfIsolationR04().sumPhotonEt - 0.5*muon_iter.pfIsolationR04().sumPUPt))/muon_iter.pt();
+    double tkIso = muon_iter.isolationR03().sumPt/muon_iter.pt();
+    if (pfIso < 0.25) passLooseIso = true;
+    if (pfIso < 0.15) passTightIso = true;
+    muon_tightId.push_back(passTightId);
+    muon_looseId.push_back(passLooseId);
+    muon_tightIso.push_back(passTightIso);
+    muon_looseIso.push_back(passLooseIso);
+    muon_eta.push_back(muon_iter.eta());
+    muon_phi.push_back(muon_iter.phi());
+    muon_e.push_back(muon_iter.energy());
+    int closestGenIndex = -1;
+    float closestGenR = 999;
+    int closestEbGenIndex = -1;
+    float closestEbGenR = 999;
+    int closestEtlGenIndex = -1;
+    float closestEtlGenR = 999;
+    int closestHgGenIndex = -1;
+    float closestHgGenR = 999;
+    for (int ig = 0; ig < ngen; ig++){
+	TLorentzVector jetVec;
+	jetVec.SetPtEtaPhiM(muon_iter.pt(),muon_iter.eta(),muon_iter.phi(),0);
+	TLorentzVector pos;
+	pos.SetPtEtaPhiM(1,q_eta[ig],q_phi[ig],0);
+	TLorentzVector ebPos;
+	ebPos.SetPtEtaPhiM(1,q_ebeta[ig],q_ebphi[ig],0);
+	TLorentzVector hgPos;
+	hgPos.SetPtEtaPhiM(1,q_hgeta[ig],q_hgphi[ig],0);
+	TLorentzVector etlPos;
+	etlPos.SetPtEtaPhiM(1,q_etleta[ig],q_etlphi[ig],0);
+	
+	float ebDeltaR = jetVec.DeltaR(ebPos);
+	if (ebDeltaR < 0.4 and closestEbGenR > ebDeltaR){
+	    closestEbGenR = ebDeltaR;
+	    closestEbGenIndex = ig;
+	}
+	float etlDeltaR = jetVec.DeltaR(etlPos);
+	if (etlDeltaR < 0.4 and closestEtlGenR > etlDeltaR){
+	    closestEtlGenR = etlDeltaR;
+	    closestEtlGenIndex = ig;
+	}
+	float hgDeltaR = jetVec.DeltaR(hgPos);
+	if (hgDeltaR < 0.4 and closestHgGenR > hgDeltaR){
+	    closestHgGenR = hgDeltaR;
+	    closestHgGenIndex = ig;
+	}
+	float genDeltaR = jetVec.DeltaR(pos);
+	if (genDeltaR < 0.4 and closestGenR > genDeltaR){
+	    closestGenR = genDeltaR;
+	    closestGenIndex = ig;
+	}
+    }
+    muon_closestGenIndex.push_back(closestGenIndex);
+    muon_closestGenR.push_back(closestGenR);
+    muon_closestEbGenIndex.push_back(closestEbGenIndex);
+    muon_closestEbGenR.push_back(closestEbGenR);
+    muon_closestEtlGenIndex.push_back(closestEtlGenIndex);
+    muon_closestEtlGenR.push_back(closestEtlGenR);
+    muon_closestHgGenIndex.push_back(closestHgGenIndex);
+    muon_closestHgGenR.push_back(closestHgGenR);
+    
+
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM ECAL --------------------------------------"<<std::endl; 
+    float weightedECALTimeCell = 0;
+    float totalECALEnergyCell = 0;
+    unsigned int ECALnCells = 0;
+    if(fabs(muon_iter.eta())<1.4442)
+      _jetTimingTools.jetTimeFromEcalCells(muon_iter, ecalRecHitsEB, weightedECALTimeCell, totalECALEnergyCell, ECALnCells);
+    muon_ECALenergy.push_back(totalECALEnergyCell);
+    muon_ECALnCells.push_back(ECALnCells);
+    if(ECALnCells>0)
+      muon_ECALtime.push_back(weightedECALTimeCell);
+    else
+      muon_ECALtime.push_back(-50);
+
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM HCAL MAHI --------------------------------------"<<std::endl; 
+    float weightedHCALTimeCell = 0;
+    float totalHCALEnergyCell = 0;
+    unsigned int HCALnCells = 0;
+    if(fabs(muon_iter.eta())<1.4442)
+    _jetTimingTools.jetTimeFromHcalCells(muon_iter, hcalRecHits, weightedHCALTimeCell, totalHCALEnergyCell, HCALnCells,false);
+    muon_HCALenergy.push_back(totalHCALEnergyCell);
+    muon_HCALnCells.push_back(HCALnCells);
+    if(HCALnCells>0)
+      muon_HCALtime.push_back(weightedHCALTimeCell);
+    else
+      muon_HCALtime.push_back(-50);
+
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM HCAL TDC --------------------------------------"<<std::endl; 
+    float weightedHCALTDCTimeCell = 0;
+    float totalHCALTDCEnergyCell = 0;
+    unsigned int HCALTDCnCells = 0;
+    _jetTimingTools.jetTimeFromHcalCells(muon_iter, hcalRecHits, weightedHCALTDCTimeCell, totalHCALTDCEnergyCell, HCALTDCnCells,true);
+    muon_HCALTDCenergy.push_back(totalHCALTDCEnergyCell);
+    muon_HCALTDCnCells.push_back(HCALTDCnCells);
+    if(HCALTDCnCells>0)
+      muon_HCALTDCtime.push_back(weightedHCALTDCTimeCell);
+    else
+      muon_HCALTDCtime.push_back(-50);
+
+
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM MTD CELLS--------------------------------------"<<std::endl; 
+    float weightedMTDTimeCell = 0;
+    float totalMTDEnergyCell = 0;
+    unsigned int MTDnCells = 0;
+    if(fabs(muon_iter.eta())<1.4442)
+      _jetTimingTools.jetTimeFromMTDCells(muon_iter, mtdRecHitsBTL, weightedMTDTimeCell, totalMTDEnergyCell, MTDnCells,1);
+    else if(fabs(muon_iter.eta())>1.4442 && fabs(muon_iter.eta()) <3.0){
+      _jetTimingTools.jetTimeFromMTDCells(muon_iter, mtdRecHitsETL, weightedMTDTimeCell, totalMTDEnergyCell, MTDnCells,0);
+    }
+
+    muon_MTDenergy.push_back(totalMTDEnergyCell);
+    muon_MTDnCells.push_back(MTDnCells);
+    if(MTDnCells>0)
+      muon_MTDtime.push_back(weightedMTDTimeCell);
+    else
+      muon_MTDtime.push_back(-50);
+
+
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM MTD CLUSTERS--------------------------------------"<<std::endl; 
+    float weightedMTDTimeClu = 0;
+    float totalMTDEnergyClu = 0;
+    unsigned int MTDnClus = 0;
+    if(fabs(muon_iter.eta())<1.4442)
+      _jetTimingTools.jetTimeFromMTDClus(muon_iter, _btlRecCluH, weightedMTDTimeClu, totalMTDEnergyClu, MTDnClus,1);
+    else if(fabs(muon_iter.eta())>1.4442 && fabs(muon_iter.eta()) <3.0){
+      _jetTimingTools.jetTimeFromMTDClus(muon_iter, _etlRecCluH, weightedMTDTimeClu, totalMTDEnergyClu, MTDnClus,0);
+    }
+    muon_MTDCluenergy.push_back(totalMTDEnergyClu);
+    muon_MTDnClus.push_back(MTDnClus);
+    if(MTDnClus>0)
+      muon_MTDClutime.push_back(weightedMTDTimeClu);
+    else
+      muon_MTDClutime.push_back(-50);
+
+    if(debug)std::cout<<" [DEBUG MODE] ------------- COMPUTE JET TIME FROM HGCAL --------------------------------------"<<std::endl; 
+    float weightedHGCALTimeTrackster = 0;
+    float totalHGCALEnergyTrackster = 0;
+    unsigned int HGCALnTracksters = 0;
+    _jetTimingTools.jetTimeFromHgcalTracksters(muon_iter, tracksters, weightedHGCALTimeTrackster, totalHGCALEnergyTrackster, HGCALnTracksters);
+    muon_HGCALenergy.push_back(totalHGCALEnergyTrackster);
+    muon_HGCALnTracksters.push_back(HGCALnTracksters);
+    if(HGCALnTracksters>0)
+      muon_HGCALtime.push_back(weightedHGCALTimeTrackster);
+    else
+      muon_HGCALtime.push_back(-50);
+  }
+  uint iJ = -1;
   for (const auto & recojet_iter : *_recoak4PFJetsH){
 
-    if(recojet_iter.pt()<20)continue;
+    if(recojet_iter.pt()<10)continue;
     if(fabs(recojet_iter.eta())>3)continue;
+    iJ++;
     
     nrecojets++;
     recojet_pt.push_back(recojet_iter.pt());
     recojet_eta.push_back(recojet_iter.eta());
     recojet_phi.push_back(recojet_iter.phi());
     recojet_e.push_back(recojet_iter.energy());
+    std::vector<reco::PFCandidatePtr> pfCands = recojet_iter.getPFConstituents();
+      for(reco::PFCandidatePtr& pfCand : pfCands){
+	  if (pfCand->pt() < 2) continue;
+	  pfCand_pt.push_back(pfCand->pt());
+	  pfCand_time.push_back(pfCand->time());
+	  pfCand_timeError.push_back(pfCand->timeError());
+	  pfCand_eta.push_back(pfCand->eta());
+	  pfCand_phi.push_back(pfCand->phi());
+	  pfCand_iJ.push_back(iJ);
+	  npfCand++;
+      }
     int closestGenIndex = -1;
     float closestGenR = 999;
     int closestEbGenIndex = -1;
     float closestEbGenR = 999;
+    int closestEtlGenIndex = -1;
+    float closestEtlGenR = 999;
     int closestHgGenIndex = -1;
     float closestHgGenR = 999;
     for (int ig = 0; ig < ngen; ig++){
@@ -471,11 +977,18 @@ std::vector<bool> q_decayInHGCAL;
 	ebPos.SetPtEtaPhiM(1,q_ebeta[ig],q_ebphi[ig],0);
 	TLorentzVector hgPos;
 	hgPos.SetPtEtaPhiM(1,q_hgeta[ig],q_hgphi[ig],0);
+	TLorentzVector etlPos;
+	etlPos.SetPtEtaPhiM(1,q_etleta[ig],q_etlphi[ig],0);
 	
 	float ebDeltaR = jetVec.DeltaR(ebPos);
 	if (ebDeltaR < 0.4 and closestEbGenR > ebDeltaR){
 	    closestEbGenR = ebDeltaR;
 	    closestEbGenIndex = ig;
+	}
+	float etlDeltaR = jetVec.DeltaR(etlPos);
+	if (etlDeltaR < 0.4 and closestEtlGenR > etlDeltaR){
+	    closestEtlGenR = etlDeltaR;
+	    closestEtlGenIndex = ig;
 	}
 	float hgDeltaR = jetVec.DeltaR(hgPos);
 	if (hgDeltaR < 0.4 and closestHgGenR > hgDeltaR){
@@ -492,6 +1005,8 @@ std::vector<bool> q_decayInHGCAL;
     recojet_closestGenR.push_back(closestGenR);
     recojet_closestEbGenIndex.push_back(closestEbGenIndex);
     recojet_closestEbGenR.push_back(closestEbGenR);
+    recojet_closestEtlGenIndex.push_back(closestEtlGenIndex);
+    recojet_closestEtlGenR.push_back(closestEtlGenR);
     recojet_closestHgGenIndex.push_back(closestHgGenIndex);
     recojet_closestHgGenR.push_back(closestHgGenR);
     
@@ -579,13 +1094,6 @@ std::vector<bool> q_decayInHGCAL;
   // Handle<View<ticl::Trackster>> tracksterHADH;
   // Handle<View<ticl::Trackster>> tracksterTrkEMH;
   // Handle<View<ticl::Trackster>> tracksterTrkH;
-    // for (auto const & trackster : *tracksterEMH){
-    //   tracksterEM_time.push_back(trackster.time());
-    //   tracksterEM_timeError.push_back(trackster.timeError());
-    //   tracksterEM_e.push_back(trackster.regressed_energy());
-    //   tracksterEM_eta.push_back(trackster.barycenter().eta());
-    //   tracksterEM_phi.push_back(trackster.barycenter().phi());
-    // }
     // for (auto const & trackster : *tracksterHADH){
     //   tracksterHAD_time.push_back(trackster.time());
     //   tracksterHAD_timeError.push_back(trackster.timeError());
@@ -632,7 +1140,8 @@ std::vector<bool> q_decayInHGCAL;
   initTreeStructure();
   clearVectors();
   tree_.ngen        = ngen;
-  tree_.ntrack = ntrack;
+  tree_.npvtrack = npvtrack;
+  tree_.npfCand = npfCand;
   // for (uint it = 0; it < tracksterEM_time.size(); it++){
   //   tree_.tracksterEM_time.push_back(tracksterEM_time[it]);
   //   tree_.tracksterEM_timeError.push_back(tracksterEM_timeError[it]);
@@ -648,6 +1157,7 @@ std::vector<bool> q_decayInHGCAL;
   //   tree_.tracksterHAD_phi.push_back(tracksterHAD_phi[it]);
   // }
   for (uint it = 0; it < tracksterMerge_time.size(); it++){
+    tree_.tracksterMerge_ticlIteration.push_back(tracksterMerge_ticlIteration[it]);
     tree_.tracksterMerge_time.push_back(tracksterMerge_time[it]);
     tree_.tracksterMerge_timeError.push_back(tracksterMerge_timeError[it]);
     tree_.tracksterMerge_e.push_back(tracksterMerge_e[it]);
@@ -662,10 +1172,18 @@ std::vector<bool> q_decayInHGCAL;
   //   tree_.tracksterTrkEM_eta.push_back(tracksterTrkEM_eta[it]);
   //   tree_.tracksterTrkEM_phi.push_back(tracksterTrkEM_phi[it]);
   // }
-  for (int it = 0; it < ntrack; it++){
-    tree_.track_pt.push_back(track_pt[it]);
-    tree_.track_eta.push_back(track_eta[it]);
-    tree_.track_phi.push_back(track_phi[it]); 
+  for (int it = 0; it < npfCand; it++){
+    tree_.pfCand_pt.push_back(pfCand_pt[it]);
+    tree_.pfCand_time.push_back(pfCand_time[it]);
+    tree_.pfCand_timeError.push_back(pfCand_timeError[it]);
+    tree_.pfCand_eta.push_back(pfCand_eta[it]);
+    tree_.pfCand_phi.push_back(pfCand_phi[it]); 
+    tree_.pfCand_iJ.push_back(pfCand_iJ[it]); 
+  }
+  for (int it = 0; it < npvtrack; it++){
+    tree_.pvtrack_pt.push_back(pvtrack_pt[it]);
+    tree_.pvtrack_eta.push_back(pvtrack_eta[it]);
+    tree_.pvtrack_phi.push_back(pvtrack_phi[it]); 
   }
   for (int ig = 0; ig < ngen; ig++){
     tree_.q_pt.push_back(q_pt[ig]);
@@ -691,6 +1209,8 @@ std::vector<bool> q_decayInHGCAL;
     tree_.recojet_closestGenR.push_back(recojet_closestGenR[ij]);
     tree_.recojet_closestEbGenIndex.push_back(recojet_closestEbGenIndex[ij]);
     tree_.recojet_closestEbGenR.push_back(recojet_closestEbGenR[ij]);
+    tree_.recojet_closestEtlGenIndex.push_back(recojet_closestEtlGenIndex[ij]);
+    tree_.recojet_closestEtlGenR.push_back(recojet_closestEtlGenR[ij]);
     tree_.recojet_closestHgGenIndex.push_back(recojet_closestHgGenIndex[ij]);
     tree_.recojet_closestHgGenR.push_back(recojet_closestHgGenR[ij]);
     tree_.recojet_pt.push_back(recojet_pt[ij]);
@@ -715,6 +1235,76 @@ std::vector<bool> q_decayInHGCAL;
     tree_.recojet_HGCALtime.push_back(recojet_HGCALtime[ij]);
     tree_.recojet_HGCALenergy.push_back(recojet_HGCALenergy[ij]);
     tree_.recojet_HGCALnTracksters.push_back(recojet_HGCALnTracksters[ij]);
+  }
+  tree_.nmuons        = nmuons;
+  for (int ij = 0; ij < nmuons; ij++){
+    tree_.muon_closestGenIndex.push_back(muon_closestGenIndex[ij]);
+    tree_.muon_closestGenR.push_back(muon_closestGenR[ij]);
+    tree_.muon_closestEbGenIndex.push_back(muon_closestEbGenIndex[ij]);
+    tree_.muon_closestEbGenR.push_back(muon_closestEbGenR[ij]);
+    tree_.muon_closestEtlGenIndex.push_back(muon_closestEtlGenIndex[ij]);
+    tree_.muon_closestEtlGenR.push_back(muon_closestEtlGenR[ij]);
+    tree_.muon_closestHgGenIndex.push_back(muon_closestHgGenIndex[ij]);
+    tree_.muon_closestHgGenR.push_back(muon_closestHgGenR[ij]);
+    tree_.muon_pt.push_back(muon_pt[ij]);
+    tree_.muon_tightId.push_back(muon_tightId[ij]);
+    tree_.muon_looseId.push_back(muon_looseId[ij]);
+    tree_.muon_tightIso.push_back(muon_tightIso[ij]);
+    tree_.muon_looseIso.push_back(muon_looseIso[ij]);
+    tree_.muon_eta.push_back(muon_eta[ij]);
+    tree_.muon_phi.push_back(muon_phi[ij]); 
+    tree_.muon_e.push_back(muon_e[ij]);
+    tree_.muon_ECALtime.push_back(muon_ECALtime[ij]);
+    tree_.muon_ECALenergy.push_back(muon_ECALenergy[ij]);
+    tree_.muon_ECALnCells.push_back(muon_ECALnCells[ij]);
+    tree_.muon_HCALtime.push_back(muon_HCALtime[ij]);
+    tree_.muon_HCALenergy.push_back(muon_HCALenergy[ij]);
+    tree_.muon_HCALnCells.push_back(muon_HCALnCells[ij]);
+    tree_.muon_HCALTDCtime.push_back(muon_HCALTDCtime[ij]);
+    tree_.muon_HCALTDCenergy.push_back(muon_HCALTDCenergy[ij]);
+    tree_.muon_HCALTDCnCells.push_back(muon_HCALTDCnCells[ij]);
+    tree_.muon_MTDtime.push_back(muon_MTDtime[ij]);
+    tree_.muon_MTDenergy.push_back(muon_MTDenergy[ij]);
+    tree_.muon_MTDnCells.push_back(muon_MTDnCells[ij]);
+    tree_.muon_MTDClutime.push_back(muon_MTDClutime[ij]);
+    tree_.muon_MTDCluenergy.push_back(muon_MTDCluenergy[ij]);
+    tree_.muon_MTDnClus.push_back(muon_MTDnClus[ij]);
+    tree_.muon_HGCALtime.push_back(muon_HGCALtime[ij]);
+    tree_.muon_HGCALenergy.push_back(muon_HGCALenergy[ij]);
+    tree_.muon_HGCALnTracksters.push_back(muon_HGCALnTracksters[ij]);
+  }
+  tree_.nelectrons        = nelectrons;
+  for (int ij = 0; ij < nelectrons; ij++){
+    tree_.electron_closestGenIndex.push_back(electron_closestGenIndex[ij]);
+    tree_.electron_closestGenR.push_back(electron_closestGenR[ij]);
+    tree_.electron_closestEbGenIndex.push_back(electron_closestEbGenIndex[ij]);
+    tree_.electron_closestEbGenR.push_back(electron_closestEbGenR[ij]);
+    tree_.electron_closestEtlGenIndex.push_back(electron_closestEtlGenIndex[ij]);
+    tree_.electron_closestEtlGenR.push_back(electron_closestEtlGenR[ij]);
+    tree_.electron_closestHgGenIndex.push_back(electron_closestHgGenIndex[ij]);
+    tree_.electron_closestHgGenR.push_back(electron_closestHgGenR[ij]);
+    tree_.electron_pt.push_back(electron_pt[ij]);
+    tree_.electron_eta.push_back(electron_eta[ij]);
+    tree_.electron_phi.push_back(electron_phi[ij]); 
+    tree_.electron_e.push_back(electron_e[ij]);
+    tree_.electron_ECALtime.push_back(electron_ECALtime[ij]);
+    tree_.electron_ECALenergy.push_back(electron_ECALenergy[ij]);
+    tree_.electron_ECALnCells.push_back(electron_ECALnCells[ij]);
+    tree_.electron_HCALtime.push_back(electron_HCALtime[ij]);
+    tree_.electron_HCALenergy.push_back(electron_HCALenergy[ij]);
+    tree_.electron_HCALnCells.push_back(electron_HCALnCells[ij]);
+    tree_.electron_HCALTDCtime.push_back(electron_HCALTDCtime[ij]);
+    tree_.electron_HCALTDCenergy.push_back(electron_HCALTDCenergy[ij]);
+    tree_.electron_HCALTDCnCells.push_back(electron_HCALTDCnCells[ij]);
+    tree_.electron_MTDtime.push_back(electron_MTDtime[ij]);
+    tree_.electron_MTDenergy.push_back(electron_MTDenergy[ij]);
+    tree_.electron_MTDnCells.push_back(electron_MTDnCells[ij]);
+    tree_.electron_MTDClutime.push_back(electron_MTDClutime[ij]);
+    tree_.electron_MTDCluenergy.push_back(electron_MTDCluenergy[ij]);
+    tree_.electron_MTDnClus.push_back(electron_MTDnClus[ij]);
+    tree_.electron_HGCALtime.push_back(electron_HGCALtime[ij]);
+    tree_.electron_HGCALenergy.push_back(electron_HGCALenergy[ij]);
+    tree_.electron_HGCALnTracksters.push_back(electron_HGCALnTracksters[ij]);
   }
 
 
@@ -741,6 +1331,7 @@ void Phase2TimingAnalyzer::beginJob() {
   // tree->Branch("tracksterHAD_eta",&tree_.tracksterHAD_eta);
   // tree->Branch("tracksterHAD_phi",&tree_.tracksterHAD_phi);
   tree->Branch("tracksterMerge_time",&tree_.tracksterMerge_time);
+  tree->Branch("tracksterMerge_ticlIteration",&tree_.tracksterMerge_ticlIteration);
   tree->Branch("tracksterMerge_timeError",&tree_.tracksterMerge_timeError);
   tree->Branch("tracksterMerge_e",&tree_.tracksterMerge_e);
   tree->Branch("tracksterMerge_eta",&tree_.tracksterMerge_eta);
@@ -751,11 +1342,18 @@ void Phase2TimingAnalyzer::beginJob() {
   // tree->Branch("tracksterTrkEM_e",&tree_.tracksterTrkEM_e);
   // tree->Branch("tracksterTrkEM_eta",&tree_.tracksterTrkEM_eta);
   // tree->Branch("tracksterTrkEM_phi",&tree_.tracksterTrkEM_phi);
-  tree->Branch("ntrack",              &tree_.ntrack,                "ntrack/I");
+  tree->Branch("npvtrack",              &tree_.npvtrack,                "npvtrack/I");
+  tree->Branch("npfCand",              &tree_.npfCand,                "npfCand/I");
   tree->Branch("ngen",              &tree_.ngen,                "ngen/I");
-  tree->Branch("track_eta", &tree_.track_eta);
-  tree->Branch("track_phi", &tree_.track_phi);
-  tree->Branch("track_pt", &tree_.track_pt);
+  tree->Branch("pvtrack_eta", &tree_.pvtrack_eta);
+  tree->Branch("pvtrack_phi", &tree_.pvtrack_phi);
+  tree->Branch("pvtrack_pt", &tree_.pvtrack_pt);
+  tree->Branch("pfCand_eta", &tree_.pfCand_eta);
+  tree->Branch("pfCand_phi", &tree_.pfCand_phi);
+  tree->Branch("pfCand_iJ", &tree_.pfCand_iJ);
+  tree->Branch("pfCand_pt", &tree_.pfCand_pt);
+  tree->Branch("pfCand_time", &tree_.pfCand_time);
+  tree->Branch("pfCand_timeError", &tree_.pfCand_timeError);
   tree->Branch("q_eta", &tree_.q_eta);
   tree->Branch("q_phi", &tree_.q_phi);
   tree->Branch("q_pt", &tree_.q_pt);
@@ -800,8 +1398,77 @@ void Phase2TimingAnalyzer::beginJob() {
   tree->Branch("recoJet_closestGenR",&tree_.recojet_closestGenR);
   tree->Branch("recoJet_closestEbGenIndex",&tree_.recojet_closestEbGenIndex);
   tree->Branch("recoJet_closestEbGenR",&tree_.recojet_closestEbGenR);
+  tree->Branch("recoJet_closestEtlGenIndex",&tree_.recojet_closestEtlGenIndex);
+  tree->Branch("recoJet_closestEtlGenR",&tree_.recojet_closestEtlGenR);
   tree->Branch("recoJet_closestHgGenIndex",&tree_.recojet_closestHgGenIndex);
   tree->Branch("recoJet_closestHgGenR",&tree_.recojet_closestHgGenR);
+ 
+  tree->Branch("nmuons",              &tree_.nmuons,                "nmuons/I");
+  tree->Branch("muon_pt",             &tree_.muon_pt);
+  tree->Branch("muon_tightId",             &tree_.muon_tightId);
+  tree->Branch("muon_tightIso",             &tree_.muon_tightIso);
+  tree->Branch("muon_looseId",             &tree_.muon_looseId);
+  tree->Branch("muon_looseIso",             &tree_.muon_looseIso);
+  tree->Branch("muon_eta",             &tree_.muon_eta);
+  tree->Branch("muon_phi",             &tree_.muon_phi);
+  tree->Branch("muon_e",             &tree_.muon_e);
+  tree->Branch("muon_ECALtime",             &tree_.muon_ECALtime);
+  tree->Branch("muon_ECALenergy",             &tree_.muon_ECALenergy);
+  tree->Branch("muon_ECALnCells",             &tree_.muon_ECALnCells);
+  tree->Branch("muon_HCALtime",             &tree_.muon_HCALtime);
+  tree->Branch("muon_HCALenergy",             &tree_.muon_HCALenergy);
+  tree->Branch("muon_HCALnCells",             &tree_.muon_HCALnCells);
+  tree->Branch("muon_HCALTDCtime",             &tree_.muon_HCALTDCtime);
+  tree->Branch("muon_HCALTDCenergy",             &tree_.muon_HCALTDCenergy);
+  tree->Branch("muon_HCALTDCnCells",             &tree_.muon_HCALTDCnCells);
+  tree->Branch("muon_MTDtime",             &tree_.muon_MTDtime);
+  tree->Branch("muon_MTDenergy",             &tree_.muon_MTDenergy);
+  tree->Branch("muon_MTDnCells",             &tree_.muon_MTDnCells);
+  tree->Branch("muon_MTDClutime",             &tree_.muon_MTDClutime);
+  tree->Branch("muon_MTDCluenergy",             &tree_.muon_MTDCluenergy);
+  tree->Branch("muon_MTDnClus",             &tree_.muon_MTDnClus);
+  tree->Branch("muon_HGCALtime",             &tree_.muon_HGCALtime);
+  tree->Branch("muon_HGCALenergy",             &tree_.muon_HGCALenergy);
+  tree->Branch("muon_HGCALnTracksters",             &tree_.muon_HGCALnTracksters);
+  tree->Branch("muon_closestGenIndex",&tree_.muon_closestGenIndex);
+  tree->Branch("muon_closestGenR",&tree_.muon_closestGenR);
+  tree->Branch("muon_closestEbGenIndex",&tree_.muon_closestEbGenIndex);
+  tree->Branch("muon_closestEbGenR",&tree_.muon_closestEbGenR);
+  tree->Branch("muon_closestEtlGenIndex",&tree_.muon_closestEtlGenIndex);
+  tree->Branch("muon_closestEtlGenR",&tree_.muon_closestEtlGenR);
+  tree->Branch("muon_closestHgGenIndex",&tree_.muon_closestHgGenIndex);
+  tree->Branch("muon_closestHgGenR",&tree_.muon_closestHgGenR);
+  tree->Branch("nelectrons",              &tree_.nelectrons,                "nelectrons/I");
+  tree->Branch("electron_pt",             &tree_.electron_pt);
+  tree->Branch("electron_eta",             &tree_.electron_eta);
+  tree->Branch("electron_phi",             &tree_.electron_phi);
+  tree->Branch("electron_e",             &tree_.electron_e);
+  tree->Branch("electron_ECALtime",             &tree_.electron_ECALtime);
+  tree->Branch("electron_ECALenergy",             &tree_.electron_ECALenergy);
+  tree->Branch("electron_ECALnCells",             &tree_.electron_ECALnCells);
+  tree->Branch("electron_HCALtime",             &tree_.electron_HCALtime);
+  tree->Branch("electron_HCALenergy",             &tree_.electron_HCALenergy);
+  tree->Branch("electron_HCALnCells",             &tree_.electron_HCALnCells);
+  tree->Branch("electron_HCALTDCtime",             &tree_.electron_HCALTDCtime);
+  tree->Branch("electron_HCALTDCenergy",             &tree_.electron_HCALTDCenergy);
+  tree->Branch("electron_HCALTDCnCells",             &tree_.electron_HCALTDCnCells);
+  tree->Branch("electron_MTDtime",             &tree_.electron_MTDtime);
+  tree->Branch("electron_MTDenergy",             &tree_.electron_MTDenergy);
+  tree->Branch("electron_MTDnCells",             &tree_.electron_MTDnCells);
+  tree->Branch("electron_MTDClutime",             &tree_.electron_MTDClutime);
+  tree->Branch("electron_MTDCluenergy",             &tree_.electron_MTDCluenergy);
+  tree->Branch("electron_MTDnClus",             &tree_.electron_MTDnClus);
+  tree->Branch("electron_HGCALtime",             &tree_.electron_HGCALtime);
+  tree->Branch("electron_HGCALenergy",             &tree_.electron_HGCALenergy);
+  tree->Branch("electron_HGCALnTracksters",             &tree_.electron_HGCALnTracksters);
+  tree->Branch("electron_closestGenIndex",&tree_.electron_closestGenIndex);
+  tree->Branch("electron_closestGenR",&tree_.electron_closestGenR);
+  tree->Branch("electron_closestEbGenIndex",&tree_.electron_closestEbGenIndex);
+  tree->Branch("electron_closestEbGenR",&tree_.electron_closestEbGenR);
+  tree->Branch("electron_closestEtlGenIndex",&tree_.electron_closestEtlGenIndex);
+  tree->Branch("electron_closestEtlGenR",&tree_.electron_closestEtlGenR);
+  tree->Branch("electron_closestHgGenIndex",&tree_.electron_closestHgGenIndex);
+  tree->Branch("electron_closestHgGenR",&tree_.electron_closestHgGenR);
 }
 
 
@@ -813,6 +1480,71 @@ void Phase2TimingAnalyzer::initTreeStructure()
 
 void Phase2TimingAnalyzer::clearVectors()
 {
+  tree_.electron_pt.clear();
+  tree_.electron_eta.clear();
+  tree_.electron_phi.clear();
+  tree_.electron_e.clear();
+  tree_.electron_ECALtime.clear();
+  tree_.electron_ECALenergy.clear();
+  tree_.electron_ECALnCells.clear();
+  tree_.electron_HCALtime.clear();
+  tree_.electron_HCALenergy.clear();
+  tree_.electron_HCALnCells.clear();
+  tree_.electron_HCALTDCtime.clear();
+  tree_.electron_HCALTDCenergy.clear();
+  tree_.electron_HCALTDCnCells.clear();
+  tree_.electron_MTDtime.clear();
+  tree_.electron_MTDenergy.clear();
+  tree_.electron_MTDnCells.clear();
+  tree_.electron_MTDClutime.clear();
+  tree_.electron_MTDCluenergy.clear();
+  tree_.electron_MTDnClus.clear();
+  tree_.electron_HGCALtime.clear();
+  tree_.electron_HGCALenergy.clear();
+  tree_.electron_HGCALnTracksters.clear();
+  tree_.electron_closestGenIndex.clear();
+  tree_.electron_closestGenR.clear();
+  tree_.electron_closestEbGenIndex.clear();
+  tree_.electron_closestEbGenR.clear();
+  tree_.electron_closestEtlGenIndex.clear();
+  tree_.electron_closestEtlGenR.clear();
+  tree_.electron_closestHgGenIndex.clear();
+  tree_.electron_closestHgGenR.clear();
+
+  tree_.muon_pt.clear();
+  tree_.muon_tightId.clear();
+  tree_.muon_looseId.clear();
+  tree_.muon_tightIso.clear();
+  tree_.muon_looseIso.clear();
+  tree_.muon_eta.clear();
+  tree_.muon_phi.clear();
+  tree_.muon_e.clear();
+  tree_.muon_ECALtime.clear();
+  tree_.muon_ECALenergy.clear();
+  tree_.muon_ECALnCells.clear();
+  tree_.muon_HCALtime.clear();
+  tree_.muon_HCALenergy.clear();
+  tree_.muon_HCALnCells.clear();
+  tree_.muon_HCALTDCtime.clear();
+  tree_.muon_HCALTDCenergy.clear();
+  tree_.muon_HCALTDCnCells.clear();
+  tree_.muon_MTDtime.clear();
+  tree_.muon_MTDenergy.clear();
+  tree_.muon_MTDnCells.clear();
+  tree_.muon_MTDClutime.clear();
+  tree_.muon_MTDCluenergy.clear();
+  tree_.muon_MTDnClus.clear();
+  tree_.muon_HGCALtime.clear();
+  tree_.muon_HGCALenergy.clear();
+  tree_.muon_HGCALnTracksters.clear();
+  tree_.muon_closestGenIndex.clear();
+  tree_.muon_closestGenR.clear();
+  tree_.muon_closestEbGenIndex.clear();
+  tree_.muon_closestEbGenR.clear();
+  tree_.muon_closestEtlGenIndex.clear();
+  tree_.muon_closestEtlGenR.clear();
+  tree_.muon_closestHgGenIndex.clear();
+  tree_.muon_closestHgGenR.clear();
 
   tree_.recojet_pt.clear();
   tree_.recojet_eta.clear();
@@ -840,12 +1572,16 @@ void Phase2TimingAnalyzer::clearVectors()
   tree_.recojet_closestGenR.clear();
   tree_.recojet_closestEbGenIndex.clear();
   tree_.recojet_closestEbGenR.clear();
+  tree_.recojet_closestEtlGenIndex.clear();
+  tree_.recojet_closestEtlGenR.clear();
   tree_.recojet_closestHgGenIndex.clear();
   tree_.recojet_closestHgGenR.clear();
+
   // tree_.tracksterEM_time.clear();
   // tree_.tracksterHAD_time.clear();
   // tree_.tracksterTrkEM_time.clear();
   tree_.tracksterMerge_time.clear();
+  tree_.tracksterMerge_ticlIteration.clear();
   // tree_.tracksterEM_timeError.clear();
   // tree_.tracksterHAD_timeError.clear();
   // tree_.tracksterTrkEM_timeError.clear();
@@ -863,9 +1599,15 @@ void Phase2TimingAnalyzer::clearVectors()
   // tree_.tracksterTrkEM_phi.clear();
   tree_.tracksterMerge_phi.clear();
   tree_.tracksterMerge_iJ.clear();
-  tree_.track_pt.clear();
-  tree_.track_eta.clear();
-  tree_.track_phi.clear();
+  tree_.pvtrack_pt.clear();
+  tree_.pvtrack_eta.clear();
+  tree_.pvtrack_phi.clear();
+  tree_.pfCand_pt.clear();
+  tree_.pfCand_time.clear();
+  tree_.pfCand_timeError.clear();
+  tree_.pfCand_eta.clear();
+  tree_.pfCand_phi.clear();
+  tree_.pfCand_iJ.clear();
   tree_.q_pt.clear();
   tree_.q_eta.clear();
   tree_.q_phi.clear();

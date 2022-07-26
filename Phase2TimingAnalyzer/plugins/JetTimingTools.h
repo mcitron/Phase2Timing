@@ -3,6 +3,7 @@
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 
 #include "DataFormats/JetReco/interface/Jet.h"
+#include "DataFormats/Candidate/interface/LeafCandidate.h"
 
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
@@ -41,29 +42,29 @@ public:
   void init(const edm::EventSetup &es);
   std::vector<double> surfaceIntersection(const reco::GenParticle&, reco::GenParticle&, double);
   std::vector<double> endCapIntersection(const reco::GenParticle&, reco::GenParticle&, double,double);
-  void jetTimeFromEcalCells(const reco::Jet&,
+  void jetTimeFromEcalCells(const reco::LeafCandidate&,
                             const edm::SortedCollection<EcalRecHit, edm::StrictWeakOrdering<EcalRecHit>>&,
                             float&,
                             float&,
                             uint&);
-  void jetTimeFromHcalCells(const reco::Jet&,
+  void jetTimeFromHcalCells(const reco::LeafCandidate&,
                             const edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>>&,
                             float&,
                             float&,
                             uint&,
 			    bool);
-  void jetTimeFromHgcalTracksters(const reco::Jet&,
+  void jetTimeFromHgcalTracksters(const reco::LeafCandidate&,
                             const std::vector<ticl::Trackster>&,
                             float&,
                             float&,
                             uint&);
-  void jetTimeFromMTDCells(const reco::Jet&,
+  void jetTimeFromMTDCells(const reco::LeafCandidate&,
                             const edm::SortedCollection<FTLRecHit, edm::StrictWeakOrdering<FTLRecHit>>&,
                             float&,
                             float&,
 			   uint&,
 			   bool);
-  void jetTimeFromMTDClus(const reco::Jet&,
+  void jetTimeFromMTDClus(const reco::LeafCandidate&,
 			      const edm::Handle<FTLClusterCollection>&,
 			      float&,
 			      float&,

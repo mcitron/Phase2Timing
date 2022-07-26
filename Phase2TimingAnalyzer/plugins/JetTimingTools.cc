@@ -10,7 +10,7 @@ JetTimingTools::JetTimingTools(edm::ConsumesCollector && cc):
     ecalCellTimeErrorThresh_(100),
     hcalCellEnergyThresh_(1.),
     hcalCellTimeThresh_(12.5),
-    hgcalTracksterEnergyThresh_(0.5),
+    hgcalTracksterEnergyThresh_(1.),
     hgcalTracksterTimeThresh_(12.5),
     hgcalTracksterTimeErrorThresh_(100),
     mtdCellEnergyThresh_(0.5),
@@ -120,7 +120,7 @@ std::vector<double> JetTimingTools::endCapIntersection(const reco::GenParticle& 
 }
 //calculate jet time from hcal cells
 void JetTimingTools::jetTimeFromHcalCells(
-    const reco::Jet& jet,
+    const reco::LeafCandidate& jet,
     const edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>>& hcalRecHits,
     float& weightedTimeCell,
     float& totalEmEnergyCell,
@@ -149,7 +149,7 @@ void JetTimingTools::jetTimeFromHcalCells(
 }
 //calculate jet time from ecal cells
 void JetTimingTools::jetTimeFromEcalCells(
-    const reco::Jet& jet,
+    const reco::LeafCandidate& jet,
     const edm::SortedCollection<EcalRecHit, edm::StrictWeakOrdering<EcalRecHit>>& ecalRecHits,
     float& weightedTimeCell,
     float& totalEmEnergyCell,
@@ -179,7 +179,7 @@ void JetTimingTools::jetTimeFromEcalCells(
 }
 //calculate jet time from hgcal tracksters
 void JetTimingTools::jetTimeFromHgcalTracksters(
-    const reco::Jet& jet,
+    const reco::LeafCandidate& jet,
     const std::vector<ticl::Trackster>& tracksters,
     float& weightedTimeTrackster,
     float& totalEnergyTrackster,
@@ -205,7 +205,7 @@ void JetTimingTools::jetTimeFromHgcalTracksters(
 
 //calculate jet time from mtd rechits
 void JetTimingTools::jetTimeFromMTDCells(
-    const reco::Jet& jet,
+    const reco::LeafCandidate& jet,
     const edm::SortedCollection<FTLRecHit,edm::StrictWeakOrdering<FTLRecHit> >& mtdRecHits,
     float& weightedTimeCell,
     float& totalEmEnergyCell,
@@ -271,7 +271,7 @@ void JetTimingTools::jetTimeFromMTDCells(
 
 //calculate jet time from mtd clusters
 void JetTimingTools::jetTimeFromMTDClus(
-    const reco::Jet& jet,
+    const reco::LeafCandidate& jet,
     const edm::Handle<FTLClusterCollection>& mtdRecClusters,
     float& weightedTimeClu,
     float& totalEnergyClu,
